@@ -44,10 +44,12 @@ export const AdminLoginGate: React.FC<AdminLoginGateProps> = ({
     e.preventDefault();
     setErrorMsg(null);
 
+    const isCompanyLinkMode = Boolean(isDedicatedLink && targetCompany);
     const result = authenticateAdmin(
       username,
       password,
-      isDedicatedLink && targetCompany ? targetCompany.id : null
+      isCompanyLinkMode && targetCompany ? targetCompany.id : null,
+      !isCompanyLinkMode // Require Master Admin ID when on the main root screen
     );
     if (!result.success || !result.user) {
       setErrorMsg(result.message);
@@ -56,6 +58,8 @@ export const AdminLoginGate: React.FC<AdminLoginGateProps> = ({
 
     onLoginSuccess(result.user);
   };
+
+  const isCompanyLinkMode = Boolean(isDedicatedLink && targetCompany);
 
   return (
     <div className="min-h-[75vh] flex items-center justify-center px-4 py-10">
@@ -74,20 +78,20 @@ export const AdminLoginGate: React.FC<AdminLoginGateProps> = ({
               DAVICH AI FIT 16
             </div>
             <h2 className="text-xl font-extrabold text-slate-900 tracking-tight mt-0.5">
-              {isDedicatedLink && targetCompany
+              {isCompanyLinkMode && targetCompany
                 ? `${targetCompany.name} 링크 관리자 로그인`
-                : '본사 관리자 & 기업별 링크 관리자 로그인'}
+                : '본사 마스터 관리자 로그인'}
             </h2>
             <p className="text-xs text-slate-500 mt-1">
-              {isDedicatedLink && targetCompany
+              {isCompanyLinkMode && targetCompany
                 ? '본사 관리자가 링크 생성 시 부여한 해당 기업 전용 관리자 ID/PW로 접속하세요'
-                : '본사 관리자(기업별 링크 생성·관리) 또는 기업별 링크 관리자 접속'}
+                : '본사 마스터 아이디로 로그인하여 기업별 전용 링크를 생성하고 통합 관리하세요'}
             </p>
           </div>
         </div>
 
         {/* Corporate Scope Notice (Credentials NEVER exposed) */}
-        {isDedicatedLink && targetCompany ? (
+        {isCompanyLinkMode && targetCompany ? (
           <div className="p-3.5 rounded-2xl bg-blue-50/80 border border-blue-200 text-xs text-blue-950 flex items-start gap-2.5 shadow-2xs">
             <Building2 className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
             <div className="min-w-0">
@@ -104,11 +108,11 @@ export const AdminLoginGate: React.FC<AdminLoginGateProps> = ({
             <Shield className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
             <div className="min-w-0">
               <div className="font-bold text-slate-900 text-sm">
-                역할별 관리자 섹션 자동 분리
+                본사 마스터 관리자 전용 게이트
               </div>
               <p className="text-[11px] text-slate-500 leading-relaxed mt-0.5">
-                • <strong>본사 관리자</strong>: 기업별 링크 생성(관리자 ID/PW 지정) 및 전사 통합 관리<br />
-                • <strong>기업별 관리자</strong>: 각 기업 전용 링크의 설문 참여자 독립 관리
+                • <strong>마스터 아이디</strong>로 로그인 후 기업별 설문 링크 생성 및 관리자(ID/PW) 부여가 가능합니다.<br />
+                • <strong>설문 참여자 및 지점 관리자</strong>는 본사에서 발급된 기업별 전용 링크(<code>?company=...</code>)로 접속해 주세요.
               </p>
             </div>
           </div>
@@ -126,14 +130,14 @@ export const AdminLoginGate: React.FC<AdminLoginGateProps> = ({
         <form onSubmit={handleSubmit} className="space-y-4 text-xs">
           <div>
             <label className="block text-slate-700 font-semibold mb-1">
-              관리자 아이디 <span className="text-rose-500">*</span>
+              {isCompanyLinkMode ? '기업 링크 관리자 아이디' : '마스터 관리자 아이디'} <span className="text-rose-500">*</span>
             </label>
             <div className="relative">
               <User className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
               <input
                 type="text"
                 required
-                placeholder={targetCompany ? `${targetCompany.name} 관리자 ID 입력` : "관리자 아이디 입력"}
+                placeholder={isCompanyLinkMode && targetCompany ? `${targetCompany.name} 관리자 ID 입력` : '마스터 관리자 아이디 입력'}
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 className="w-full pl-9 pr-3 py-2.5 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 font-medium font-mono"
@@ -174,25 +178,27 @@ export const AdminLoginGate: React.FC<AdminLoginGateProps> = ({
           >
             <LogIn className="w-4 h-4" />
             <span>
-              {targetCompany ? `${targetCompany.name} 관리자 로그인` : '관리자 로그인'}
+              {isCompanyLinkMode && targetCompany
+                ? `${targetCompany.name} 관리자 로그인`
+                : '마스터 관리자 로그인'}
             </span>
           </button>
         </form>
 
-        {/* Footer / Switch back to Survey */}
-        <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
-          <span>직원 진단 참여를 원하시나요?</span>
-          {onCancelToSurvey && (
+        {/* Footer / Switch back to Survey (ONLY on dedicated company links) */}
+        {isCompanyLinkMode && onCancelToSurvey && (
+          <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
+            <span>직원 진단 참여를 원하시나요?</span>
             <button
               type="button"
               onClick={onCancelToSurvey}
               className="text-blue-700 hover:underline font-semibold flex items-center gap-1 cursor-pointer"
             >
-              <span>← 일반 설문으로 돌아가기</span>
+              <span>← {targetCompany?.name} 설문으로 돌아가기</span>
               <ArrowRight className="w-3.5 h-3.5" />
             </button>
-          )}
-        </div>
+          </div>
+        )}
       </div>
     </div>
   );

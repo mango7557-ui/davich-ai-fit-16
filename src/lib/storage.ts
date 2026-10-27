@@ -355,7 +355,8 @@ export function saveAdminSession(user: AdminUser | null) {
 export function authenticateAdmin(
   username: string,
   password: string,
-  targetCompanyId?: string | null
+  targetCompanyId?: string | null,
+  requireMasterOnly?: boolean
 ): { success: boolean; user?: AdminUser; message: string } {
   const cleanUser = username.trim();
   const cleanPass = password.trim();
@@ -383,6 +384,14 @@ export function authenticateAdmin(
       success: true,
       user,
       message: '본사 총괄 마스터 관리자(한재환)로 로그인되었습니다.',
+    };
+  }
+
+  // If on main root screen (requireMasterOnly), strictly require Master Admin account
+  if (requireMasterOnly) {
+    return {
+      success: false,
+      message: '본사 메인 화면은 마스터 관리자 계정으로만 로그인할 수 있습니다. (기업별 관리자는 발급된 각 기업 전용 링크에서 로그인해 주세요)',
     };
   }
 

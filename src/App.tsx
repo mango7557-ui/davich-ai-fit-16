@@ -21,12 +21,27 @@ import { X, Lock } from 'lucide-react';
 
 export default function App() {
   const [store, setStore] = useState<StorageState>(getStoredState());
-  const [adminUser, setAdminUser] = useState<AdminUser | null>(() => getSavedAdminSession());
-  const [activeTab, setActiveTab] = useState<'LINKS' | 'SURVEY' | 'RESULT' | 'ADMIN'>(() => {
+  const [adminUser, setAdminUser] = useState<AdminUser | null>(() => {
     const saved = getSavedAdminSession();
-    if (saved?.role === 'MASTER') return 'LINKS';
-    if (saved?.role === 'COMPANY_MANAGER') return 'ADMIN';
-    return 'SURVEY';
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      if (!params.get('company') && saved?.role === 'COMPANY_MANAGER') {
+        // Main root screen is strictly for Master Admin login
+        return null;
+      }
+    }
+    return saved;
+  });
+  const [activeTab, setActiveTab] = useState<'LINKS' | 'SURVEY' | 'RESULT' | 'ADMIN'>(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('company')) {
+        const saved = getSavedAdminSession();
+        return saved?.role === 'COMPANY_MANAGER' ? 'ADMIN' : 'SURVEY';
+      }
+    }
+    // Root main screen always defaults to LINKS (Master Login Gate -> HQ Link Manager)
+    return 'LINKS';
   });
   const [selectedCompanyCode, setSelectedCompanyCode] = useState<string | null>(null);
   const [selectedAdminCompanyId, setSelectedAdminCompanyId] = useState<string>(() => {
@@ -173,11 +188,13 @@ export default function App() {
             if (companyParam) {
               setSelectedCompanyCode(companyParam);
               setIsDedicatedSurveyMode(true);
-            } else {
-              setIsDedicatedSurveyMode(false);
+              setActiveTab('SURVEY');
+              return;
             }
           }
-          setActiveTab('SURVEY');
+          setIsDedicatedSurveyMode(false);
+          setSelectedCompanyCode(null);
+          setActiveTab('LINKS');
         }}
         onOpenAdminLogin={() => {
           setActiveTab('ADMIN');

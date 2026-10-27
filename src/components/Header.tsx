@@ -68,13 +68,17 @@ export const Header: React.FC<HeaderProps> = ({
           <div className="flex items-center gap-3 shrink-0">
             <button
               onClick={() => {
-                if (adminUser) {
+                if (adminUser?.role === 'MASTER') {
+                  setActiveTab('LINKS');
+                } else if (adminUser?.role === 'COMPANY_MANAGER') {
                   setActiveTab('ADMIN');
-                } else {
+                } else if (isDedicatedSurveyMode) {
                   setActiveTab('SURVEY');
+                } else {
+                  setActiveTab('LINKS');
                 }
               }}
-              className="flex items-center gap-2.5 text-left group"
+              className="flex items-center gap-2.5 text-left group cursor-pointer"
             >
               <img
                 src="assets/aistudio/___-_ceodavich_final_clean_da550648.png"
@@ -189,7 +193,7 @@ export const Header: React.FC<HeaderProps> = ({
                 <span>참여자 결과 조회</span>
               </button>
             </nav>
-          ) : (
+          ) : isDedicatedSurveyMode ? (
             /* Section 3: Survey Respondent View (Isolated per Company Link) */
             <nav className="hidden md:flex items-center gap-2 text-sm font-medium">
               <button
@@ -216,6 +220,12 @@ export const Header: React.FC<HeaderProps> = ({
                 <span>{dedicatedCompanyName ? `[${dedicatedCompanyName}] 내 결과 조회` : '내 진단 결과'}</span>
               </button>
             </nav>
+          ) : (
+            /* Main Root Gate (Before Master Admin Login) */
+            <div className="hidden md:flex items-center gap-2 text-xs text-slate-400 font-medium">
+              <Shield className="w-4 h-4 text-blue-400" />
+              <span>본사 마스터 관리자 전용 로그인 게이트</span>
+            </div>
           )}
 
           {/* Zone 3: Actions */}
@@ -352,7 +362,7 @@ export const Header: React.FC<HeaderProps> = ({
                 결과조회
               </button>
             </>
-          ) : (
+          ) : isDedicatedSurveyMode ? (
             <>
               <button
                 onClick={() => setActiveTab('SURVEY')}
@@ -367,6 +377,8 @@ export const Header: React.FC<HeaderProps> = ({
                 내 진단 결과
               </button>
             </>
+          ) : (
+            <span className="text-slate-400 py-1 font-medium">본사 마스터 관리자 인증 필요</span>
           )}
         </div>
       </div>
