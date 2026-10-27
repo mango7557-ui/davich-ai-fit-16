@@ -46,6 +46,45 @@ export const CompanyLinkManager: React.FC<CompanyLinkManagerProps> = ({
   const [qrModalCompany, setQrModalCompany] = useState<Company | null>(null);
   const [loginModalCompany, setLoginModalCompany] = useState<Company | null>(null);
   const [kakaoModalCompany, setKakaoModalCompany] = useState<Company | null>(null);
+  const [editingCompany, setEditingCompany] = useState<Company | null>(null);
+
+  // Edit Form state
+  const [editName, setEditName] = useState('');
+  const [editManagerName, setEditManagerName] = useState('');
+  const [editManagerId, setEditManagerId] = useState('');
+  const [editManagerPassword, setEditManagerPassword] = useState('');
+  const [editTargetCount, setEditTargetCount] = useState<number>(20);
+  const [editDeptInput, setEditDeptInput] = useState('');
+
+  const handleOpenEditModal = (comp: Company) => {
+    setEditingCompany(comp);
+    setEditName(comp.name);
+    setEditManagerName(comp.managerName || '');
+    setEditManagerId(comp.managerId || comp.code);
+    setEditManagerPassword(comp.managerPassword || '1234');
+    setEditTargetCount(comp.targetRespondentCount || 20);
+    setEditDeptInput(comp.allowedDepartments.join(', '));
+  };
+
+  const handleSaveEditCompany = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingCompany || !editName.trim() || !editManagerId.trim() || !editManagerPassword.trim()) return;
+
+    const depts = editDeptInput
+      .split(',')
+      .map((d) => d.trim())
+      .filter(Boolean);
+
+    updateCompany(editingCompany.id, {
+      name: editName.trim(),
+      managerName: editManagerName.trim() || undefined,
+      managerId: editManagerId.trim(),
+      managerPassword: editManagerPassword.trim(),
+      targetRespondentCount: editTargetCount > 0 ? editTargetCount : 20,
+      allowedDepartments: depts.length > 0 ? depts : ['기본 부서'],
+    });
+    setEditingCompany(null);
+  };
 
   // Form state
   const [name, setName] = useState('');
@@ -365,26 +404,37 @@ export const CompanyLinkManager: React.FC<CompanyLinkManagerProps> = ({
 
                   {/* Manager Login Credentials Badge (ONLY visible to Master Admin) */}
                   {isMasterAdmin && (
-                    <div className="mt-3 p-2.5 rounded-xl bg-amber-50/70 border border-amber-200/90 text-xs flex items-center justify-between gap-2 shadow-2xs">
-                      <div className="flex items-center gap-1.5 text-amber-900 font-mono text-[11px] truncate">
-                        <Shield className="w-3.5 h-3.5 text-amber-600 shrink-0" />
-                        <span className="font-semibold text-amber-950 font-sans">관리자 계정 (마스터 전용):</span>
-                        <span>ID: <strong className="text-blue-800">{company.managerId || company.code}</strong></span>
-                        <span>/</span>
-                        <span>PW: <strong className="text-slate-800">{company.managerPassword || '1234'}</strong></span>
+                    <div className="mt-3 p-3 rounded-xl bg-amber-50/80 border border-amber-200/90 text-xs space-y-2 shadow-2xs">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-1.5 text-amber-900 font-mono text-[11px] truncate">
+                          <Shield className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                          <span className="font-bold text-amber-950 font-sans">링크 전용 관리자 계정:</span>
+                          <span>ID: <strong className="text-blue-800">{company.managerId || company.code}</strong></span>
+                          <span>/</span>
+                          <span>PW: <strong className="text-slate-900">{company.managerPassword || '1234'}</strong></span>
+                        </div>
+                        <div className="flex items-center gap-2 shrink-0">
+                          <button
+                            type="button"
+                            onClick={() => handleOpenEditModal(company)}
+                            className="text-[11px] px-2 py-0.5 rounded bg-white hover:bg-amber-100 text-amber-900 border border-amber-300 font-semibold cursor-pointer transition-colors"
+                          >
+                            ID/PW 변경
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const credText = `[${company.name} 전용 설문 링크 & 관리자 계정 안내]\n▶ 전용 링크: ${getFullSurveyUrl(company.code)}\n▶ 관리자 아이디: ${company.managerId || company.code}\n▶ 관리자 비밀번호: ${company.managerPassword || '1234'}\n※ 위 링크 접속 후 우측 상단 [${company.name} 관리자] 버튼에서 로그인하시면 해당 링크의 설문 참여자만 독립 관리하실 수 있습니다.`;
+                              navigator.clipboard.writeText(credText);
+                              setCopiedCode(`cred_${company.id}`);
+                              setTimeout(() => setCopiedCode(null), 2500);
+                            }}
+                            className="text-[11px] text-amber-800 hover:text-amber-950 font-semibold underline shrink-0 cursor-pointer"
+                          >
+                            {copiedCode === `cred_${company.id}` ? '복사완료!' : '계정+링크 복사'}
+                          </button>
+                        </div>
                       </div>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const credText = `[${company.name} 관리자 접속 계정]\n아이디: ${company.managerId || company.code}\n비밀번호: ${company.managerPassword || '1234'}\n설문 참여 링크: ${getFullSurveyUrl(company.code)}`;
-                          navigator.clipboard.writeText(credText);
-                          setCopiedCode(`cred_${company.id}`);
-                          setTimeout(() => setCopiedCode(null), 2500);
-                        }}
-                        className="text-[11px] text-amber-800 hover:text-amber-950 font-semibold underline shrink-0 cursor-pointer"
-                      >
-                        {copiedCode === `cred_${company.id}` ? '계정 복사완료!' : '계정 정보 복사'}
-                      </button>
                     </div>
                   )}
                 </div>
@@ -459,18 +509,24 @@ export const CompanyLinkManager: React.FC<CompanyLinkManagerProps> = ({
                         onSelectCompanyForSurvey(company.code);
                       }}
                       className="py-2.5 px-3 rounded-xl text-white bg-blue-600 hover:bg-blue-500 font-bold flex items-center justify-center gap-1.5 transition-colors whitespace-nowrap truncate shadow-sm cursor-pointer group"
-                      title={`${company.name} 설문 참여 화면으로 즉시 이동`}
+                      title={`${company.name} 전용 설문 참여 섹션 열기`}
                     >
-                      <span className="truncate">{company.name} 설문 참여</span>
+                      <span className="truncate">{company.name} 설문 섹션</span>
                       <ArrowRight className="w-3.5 h-3.5 shrink-0 group-hover:translate-x-0.5 transition-transform" />
                     </a>
                     <button
                       type="button"
-                      onClick={() => setLoginModalCompany(company)}
+                      onClick={() => {
+                        if (isMasterAdmin) {
+                          onFilterAdminByCompany(company.id);
+                        } else {
+                          setLoginModalCompany(company);
+                        }
+                      }}
                       className="py-2.5 px-3 rounded-xl text-slate-700 bg-slate-100 hover:bg-slate-200/80 font-semibold flex items-center justify-center gap-1.5 transition-colors whitespace-nowrap cursor-pointer shadow-2xs"
-                      title={`${company.name} 관리자 아이디/비번으로 로그인 후 대시보드 접속`}
+                      title={`${company.name} 설문 참여자 관리 대시보드 열기`}
                     >
-                      <span>대시보드 분석</span>
+                      <span>참여자 관리 섹션 ({count}명)</span>
                       <ExternalLink className="w-3.5 h-3.5" />
                     </button>
                   </div>
@@ -764,6 +820,140 @@ export const CompanyLinkManager: React.FC<CompanyLinkManagerProps> = ({
                 닫기
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: Edit Company Link & Admin Credentials */}
+      {editingCompany && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-white border border-slate-200 rounded-2xl max-w-lg w-full p-6 sm:p-7 shadow-2xl space-y-5 animate-in fade-in zoom-in-95">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+              <div className="flex items-center gap-3">
+                <img
+                  src="assets/aistudio/___-_ceodavich_final_clean_da550648.png"
+                  alt="다비치안경 로고"
+                  className="w-9 h-9 rounded-xl object-contain shadow-2xs shrink-0"
+                />
+                <div>
+                  <h3 className="text-lg font-bold text-slate-900">
+                    [{editingCompany.name}] 관리자 계정 및 링크 설정 변경
+                  </h3>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    해당 기업 링크(`?company={editingCompany.code}`)를 전담 관리할 관리자 아이디와 비밀번호를 설정합니다.
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setEditingCompany(null)}
+                className="text-slate-400 hover:text-slate-600 text-lg p-1 cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveEditCompany} className="space-y-4 text-xs">
+              <div className="p-4 bg-blue-50/80 border border-blue-200 rounded-xl space-y-3">
+                <div className="flex items-center gap-1.5 font-bold text-blue-950 text-xs">
+                  <Shield className="w-4 h-4 text-blue-600" />
+                  <span>해당 링크 전용 관리자 아이디 / 비밀번호</span>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-slate-700 font-semibold mb-1">
+                      관리자 아이디 (ID) <span className="text-rose-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={editManagerId}
+                      onChange={(e) => setEditManagerId(e.target.value)}
+                      className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 font-mono"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-slate-700 font-semibold mb-1">
+                      관리자 비밀번호 (PW) <span className="text-rose-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={editManagerPassword}
+                      onChange={(e) => setEditManagerPassword(e.target.value)}
+                      className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 font-mono"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-slate-700 font-semibold mb-1">
+                    기업/안경원명 <span className="text-rose-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={editName}
+                    onChange={(e) => setEditName(e.target.value)}
+                    className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-slate-700 font-semibold mb-1">
+                    담당 관리자 성명
+                  </label>
+                  <input
+                    type="text"
+                    value={editManagerName}
+                    onChange={(e) => setEditManagerName(e.target.value)}
+                    className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-slate-700 font-semibold mb-1">
+                  부서/팀 목록 (쉼표로 구분)
+                </label>
+                <input
+                  type="text"
+                  value={editDeptInput}
+                  onChange={(e) => setEditDeptInput(e.target.value)}
+                  className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-slate-700 font-semibold mb-1">
+                  예상 진단 대상 인원 수
+                </label>
+                <input
+                  type="number"
+                  min="1"
+                  max="1000"
+                  value={editTargetCount}
+                  onChange={(e) => setEditTargetCount(parseInt(e.target.value) || 1)}
+                  className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                />
+              </div>
+
+              <div className="pt-3 border-t border-slate-100 flex items-center justify-end gap-2.5">
+                <button
+                  type="button"
+                  onClick={() => setEditingCompany(null)}
+                  className="px-4 py-2 border border-slate-200 hover:bg-slate-50 text-slate-700 rounded-xl font-medium transition-colors cursor-pointer"
+                >
+                  취소
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-semibold shadow-sm transition-colors cursor-pointer"
+                >
+                  저장하기
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

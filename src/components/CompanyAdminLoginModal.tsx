@@ -45,7 +45,7 @@ export const CompanyAdminLoginModal: React.FC<CompanyAdminLoginModalProps> = ({
     e.preventDefault();
     setErrorMsg(null);
 
-    const result = authenticateAdmin(username, password);
+    const result = authenticateAdmin(username, password, company.id);
     if (!result.success || !result.user) {
       setErrorMsg(result.message);
       return;

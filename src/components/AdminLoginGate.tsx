@@ -17,6 +17,7 @@ interface AdminLoginGateProps {
   onLoginSuccess: (user: AdminUser) => void;
   onCancelToSurvey?: () => void;
   targetCompany?: Company | null;
+  isDedicatedLink?: boolean;
   companies?: Company[];
   onSelectCompany?: (company: Company) => void;
 }
@@ -25,6 +26,7 @@ export const AdminLoginGate: React.FC<AdminLoginGateProps> = ({
   onLoginSuccess,
   onCancelToSurvey,
   targetCompany,
+  isDedicatedLink = false,
   companies = [],
 }) => {
   const [username, setUsername] = useState<string>('');
@@ -42,7 +44,11 @@ export const AdminLoginGate: React.FC<AdminLoginGateProps> = ({
     e.preventDefault();
     setErrorMsg(null);
 
-    const result = authenticateAdmin(username, password);
+    const result = authenticateAdmin(
+      username,
+      password,
+      isDedicatedLink && targetCompany ? targetCompany.id : null
+    );
     if (!result.success || !result.user) {
       setErrorMsg(result.message);
       return;
@@ -68,24 +74,28 @@ export const AdminLoginGate: React.FC<AdminLoginGateProps> = ({
               DAVICH AI FIT 16
             </div>
             <h2 className="text-xl font-extrabold text-slate-900 tracking-tight mt-0.5">
-              관리자 로그인
+              {isDedicatedLink && targetCompany
+                ? `${targetCompany.name} 링크 관리자 로그인`
+                : '본사 관리자 & 기업별 링크 관리자 로그인'}
             </h2>
             <p className="text-xs text-slate-500 mt-1">
-              기업별 링크 관리 및 전사 AI 역량 통합 분석 대시보드
+              {isDedicatedLink && targetCompany
+                ? '본사 관리자가 링크 생성 시 부여한 해당 기업 전용 관리자 ID/PW로 접속하세요'
+                : '본사 관리자(기업별 링크 생성·관리) 또는 기업별 링크 관리자 접속'}
             </p>
           </div>
         </div>
 
         {/* Corporate Scope Notice (Credentials NEVER exposed) */}
-        {targetCompany ? (
+        {isDedicatedLink && targetCompany ? (
           <div className="p-3.5 rounded-2xl bg-blue-50/80 border border-blue-200 text-xs text-blue-950 flex items-start gap-2.5 shadow-2xs">
             <Building2 className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
             <div className="min-w-0">
               <div className="font-bold text-blue-900 text-sm">
-                [{targetCompany.name}] 관리자 전용 인증
+                [{targetCompany.name}] 전용 링크 독립 관리 섹션
               </div>
               <p className="text-[11px] text-blue-800 leading-relaxed mt-0.5">
-                기업 전용 링크를 통해 접속하셨습니다. 소속 관리자 아이디와 비밀번호를 입력해 주세요.
+                본 링크(/{targetCompany.code})는 독립된 기업 섹션입니다. 링크 생성 시 지정된 <strong>관리자 아이디와 비밀번호</strong>로 로그인하시면 이 링크의 설문 참여자만 전담 관리합니다.
               </p>
             </div>
           </div>
@@ -94,10 +104,11 @@ export const AdminLoginGate: React.FC<AdminLoginGateProps> = ({
             <Shield className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
             <div className="min-w-0">
               <div className="font-bold text-slate-900 text-sm">
-                관리자 보안 인증
+                역할별 관리자 섹션 자동 분리
               </div>
               <p className="text-[11px] text-slate-500 leading-relaxed mt-0.5">
-                기업별 관리자 또는 마스터 계정 아이디와 비밀번호를 입력해 주세요.
+                • <strong>본사 관리자</strong>: 기업별 링크 생성(관리자 ID/PW 지정) 및 전사 통합 관리<br />
+                • <strong>기업별 관리자</strong>: 각 기업 전용 링크의 설문 참여자 독립 관리
               </p>
             </div>
           </div>

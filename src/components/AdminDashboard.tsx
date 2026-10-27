@@ -236,10 +236,15 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   };
 
   // Copy KakaoTalk / Workplace Invite Text
+  const getCompanySurveyUrl = (compCode: string) => {
+    if (typeof window === 'undefined') return `?company=${compCode}`;
+    const base = window.location.origin + window.location.pathname;
+    return `${base}?company=${compCode}`;
+  };
+
   const handleCopyInviteMessage = () => {
     if (!currentCompany) return;
-    const origin = typeof window !== 'undefined' ? window.location.origin : '';
-    const surveyUrl = `${origin}/?company=${currentCompany.code}`;
+    const surveyUrl = getCompanySurveyUrl(currentCompany.code);
     const text = `[다비치안경 ${currentCompany.name} 직원 AI 역량 진단 참여 안내]\n\n안녕하십니까, ${currentCompany.name} 임직원 여러분.\n본사 및 지점의 AI 실무 활용 역량 강화와 업무 자동화 과제 발굴을 위해 사내 AI 진단 설문을 실시합니다.\n\n▶ 참여 링크: ${surveyUrl}\n▶ 소요 시간: 약 10~15분 (1주일 이내 완료)\n▶ 주요 진단: AI 실무 활용 역량 (0~100점), 16개 업무 성향 진단, 매장 업무 자동화 제안\n\n모든 임직원의 적극적인 참여를 부탁드립니다. 감사합니다.`;
     navigator.clipboard.writeText(text);
     setCopiedInvite(true);
@@ -313,22 +318,39 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   </span>
                   <span className="text-xs font-mono text-slate-400">/{currentCompany.code}</span>
                   <span className="text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
-                    관리자 대시보드 활성
+                    {isCompanyManager ? '기업별 전용 링크 독립 관리 섹션' : '본사 관리자 · 기업별 상세 관리'}
                   </span>
                 </div>
                 <h2 className="text-2xl font-extrabold text-slate-900 tracking-tight flex items-center gap-2">
-                  <span>{currentCompany.name} 소속 직원 관리 & AI 진단 센터</span>
+                  <span>[{currentCompany.name}] 전용 링크 설문 참여자 관리 섹션</span>
                 </h2>
                 <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-500">
                   <span>
                     담당 관리자: <strong className="text-slate-800">{currentCompany.managerName || '원장/점장'}</strong>
                   </span>
                   <span>
-                    관리자 ID: <strong className="text-blue-700 font-mono">{currentCompany.managerId || currentCompany.code}</strong>
+                    링크 관리자 ID: <strong className="text-blue-700 font-mono">{currentCompany.managerId || currentCompany.code}</strong>
                   </span>
                   <span>
                     부서 구성: <strong className="text-slate-700">{currentCompany.allowedDepartments.join(', ')}</strong>
                   </span>
+                </div>
+                {/* Dedicated Link Quick Copy Bar for this company section */}
+                <div className="pt-1 flex flex-wrap items-center gap-2">
+                  <span className="text-[11px] font-mono bg-slate-100 text-slate-700 px-2.5 py-1 rounded-lg border border-slate-200 select-all">
+                    {getCompanySurveyUrl(currentCompany.code)}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      navigator.clipboard.writeText(getCompanySurveyUrl(currentCompany.code));
+                      notify(`${currentCompany.name} 전용 설문 참여 링크가 복사되었습니다.`);
+                    }}
+                    className="text-[11px] px-2.5 py-1 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 font-semibold flex items-center gap-1 cursor-pointer transition-colors"
+                  >
+                    <Copy className="w-3 h-3" />
+                    <span>전용 링크 복사</span>
+                  </button>
                 </div>
               </div>
             </div>
@@ -344,7 +366,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 className="px-3.5 py-2.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-xl shadow-2xs flex items-center gap-1.5 transition-colors cursor-pointer"
               >
                 <UserPlus className="w-4 h-4" />
-                <span>신규 직원 등록</span>
+                <span>설문 참여자 사전 등록</span>
               </button>
 
               <button
@@ -378,13 +400,22 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               </button>
 
               {isMasterAdmin && (
-                <button
-                  type="button"
-                  onClick={() => onSelectCompanyId('ALL')}
-                  className="px-3 py-2.5 text-xs text-slate-600 hover:text-slate-900 border border-slate-200 bg-slate-50 hover:bg-slate-100 rounded-xl transition-colors cursor-pointer font-medium"
-                >
-                  전체 기업 보기
-                </button>
+                <>
+                  <button
+                    type="button"
+                    onClick={() => onSelectCompanyId('ALL')}
+                    className="px-3 py-2.5 text-xs text-slate-600 hover:text-slate-900 border border-slate-200 bg-slate-50 hover:bg-slate-100 rounded-xl transition-colors cursor-pointer font-medium"
+                  >
+                    전사 통합 보기
+                  </button>
+                  <button
+                    type="button"
+                    onClick={onNavigateToLinks}
+                    className="px-3 py-2.5 text-xs text-blue-700 hover:text-blue-900 border border-blue-200 bg-blue-50 hover:bg-blue-100 rounded-xl transition-colors cursor-pointer font-bold"
+                  >
+                    ← 본사 링크 관리
+                  </button>
+                </>
               )}
             </div>
           </div>
@@ -1229,11 +1260,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         company={currentCompany || null}
         isOpen={showKakaoModal && currentCompany !== null}
         onClose={() => setShowKakaoModal(false)}
-        surveyUrl={
-          currentCompany && typeof window !== 'undefined'
-            ? `${window.location.origin}/?company=${currentCompany.code}`
-            : ''
-        }
+        surveyUrl={currentCompany ? getCompanySurveyUrl(currentCompany.code) : ''}
       />
     </div>
   );

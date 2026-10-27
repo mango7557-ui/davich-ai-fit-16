@@ -86,59 +86,61 @@ export const Header: React.FC<HeaderProps> = ({
                   DAVICH AI FIT 16
                 </span>
                 <span className="text-[10px] text-slate-400 font-mono tracking-wider -mt-0.5">
-                  {adminUser
-                    ? '다비치안경 AI 역량 & 성향 진단 · 관리자 모드'
+                  {adminUser?.role === 'MASTER'
+                    ? '본사 총괄 관리자 섹션 · 기업별 링크 생성 및 통합 관리'
+                    : adminUser?.role === 'COMPANY_MANAGER'
+                    ? `${adminUser.companyName} 전용 관리자 섹션 · 설문 참여자 관리`
                     : dedicatedCompanyName
-                    ? `${dedicatedCompanyName} 전용 설문 진단`
+                    ? `${dedicatedCompanyName} 전용 설문 참여 섹션`
                     : '다비치안경 임직원 AI 역량 & 성향 진단'}
                 </span>
               </div>
             </button>
           </div>
 
-          {/* Zone 2: Navigation Links */}
-          {adminUser ? (
-            /* Logged-in Admin View: Show full management navigation */
+          {/* Zone 2: Navigation Links (Strictly separated by Section Role) */}
+          {adminUser?.role === 'MASTER' ? (
+            /* Section 1: HQ Master Admin Navigation */
             <nav className="hidden md:flex items-center gap-1 sm:gap-2 text-sm font-medium">
               <button
-                onClick={() => setActiveTab('ADMIN')}
-                className={`px-3.5 py-1.5 rounded-md transition-colors whitespace-nowrap shrink-0 flex items-center gap-1.5 ${
-                  activeTab === 'ADMIN'
-                    ? 'bg-blue-600 text-white font-semibold shadow-xs'
-                    : 'text-slate-300 hover:text-white hover:bg-slate-800/80'
-                }`}
-              >
-                <BarChart3 className="w-4 h-4" />
-                <span>분석 대시보드</span>
-              </button>
-
-              <button
                 onClick={() => setActiveTab('LINKS')}
-                className={`px-3.5 py-1.5 rounded-md transition-colors whitespace-nowrap shrink-0 flex items-center gap-1.5 ${
+                className={`px-3.5 py-1.5 rounded-md transition-colors whitespace-nowrap shrink-0 flex items-center gap-1.5 cursor-pointer ${
                   activeTab === 'LINKS'
                     ? 'bg-blue-600 text-white font-semibold shadow-xs'
                     : 'text-slate-300 hover:text-white hover:bg-slate-800/80'
                 }`}
               >
                 <Link2 className="w-4 h-4" />
-                <span>기업별 링크 관리</span>
+                <span>기업별 링크 생성·관리 (본사)</span>
+              </button>
+
+              <button
+                onClick={() => setActiveTab('ADMIN')}
+                className={`px-3.5 py-1.5 rounded-md transition-colors whitespace-nowrap shrink-0 flex items-center gap-1.5 cursor-pointer ${
+                  activeTab === 'ADMIN'
+                    ? 'bg-blue-600 text-white font-semibold shadow-xs'
+                    : 'text-slate-300 hover:text-white hover:bg-slate-800/80'
+                }`}
+              >
+                <BarChart3 className="w-4 h-4" />
+                <span>전사/기업별 통합 대시보드</span>
               </button>
 
               <button
                 onClick={() => setActiveTab('SURVEY')}
-                className={`px-3.5 py-1.5 rounded-md transition-colors whitespace-nowrap shrink-0 flex items-center gap-1.5 ${
+                className={`px-3.5 py-1.5 rounded-md transition-colors whitespace-nowrap shrink-0 flex items-center gap-1.5 cursor-pointer ${
                   activeTab === 'SURVEY'
                     ? 'bg-blue-600 text-white font-semibold shadow-xs'
                     : 'text-slate-300 hover:text-white hover:bg-slate-800/80'
                 }`}
               >
                 <UserCheck className="w-4 h-4" />
-                <span>설문 진단 (직원용)</span>
+                <span>설문 진단 미리보기</span>
               </button>
 
               <button
                 onClick={() => setActiveTab('RESULT')}
-                className={`px-3.5 py-1.5 rounded-md transition-colors whitespace-nowrap shrink-0 flex items-center gap-1.5 ${
+                className={`px-3.5 py-1.5 rounded-md transition-colors whitespace-nowrap shrink-0 flex items-center gap-1.5 cursor-pointer ${
                   activeTab === 'RESULT'
                     ? 'bg-blue-600 text-white font-semibold shadow-xs'
                     : 'text-slate-300 hover:text-white hover:bg-slate-800/80'
@@ -148,31 +150,70 @@ export const Header: React.FC<HeaderProps> = ({
                 <span>진단 결과 리포트</span>
               </button>
             </nav>
-          ) : (
-            /* General Public / Employee View: Admin tabs are COMPLETELY HIDDEN */
-            <nav className="hidden md:flex items-center gap-2 text-sm font-medium">
+          ) : adminUser?.role === 'COMPANY_MANAGER' ? (
+            /* Section 2: Company Link Manager Navigation (Isolated to their own company link) */
+            <nav className="hidden md:flex items-center gap-1 sm:gap-2 text-sm font-medium">
+              <button
+                onClick={() => setActiveTab('ADMIN')}
+                className={`px-3.5 py-1.5 rounded-md transition-colors whitespace-nowrap shrink-0 flex items-center gap-1.5 cursor-pointer ${
+                  activeTab === 'ADMIN'
+                    ? 'bg-blue-600 text-white font-semibold shadow-xs'
+                    : 'text-slate-300 hover:text-white hover:bg-slate-800/80'
+                }`}
+              >
+                <BarChart3 className="w-4 h-4" />
+                <span>{adminUser.companyName} 설문 참여자 관리</span>
+              </button>
+
               <button
                 onClick={() => setActiveTab('SURVEY')}
-                className={`px-4 py-1.5 rounded-md transition-colors whitespace-nowrap shrink-0 flex items-center gap-2 ${
+                className={`px-3.5 py-1.5 rounded-md transition-colors whitespace-nowrap shrink-0 flex items-center gap-1.5 cursor-pointer ${
                   activeTab === 'SURVEY'
                     ? 'bg-blue-600 text-white font-semibold shadow-xs'
                     : 'text-slate-300 hover:text-white hover:bg-slate-800/80'
                 }`}
               >
                 <UserCheck className="w-4 h-4" />
-                <span>{dedicatedCompanyName ? `${dedicatedCompanyName} 설문지` : 'AI FIT 16 진단 참여'}</span>
+                <span>{adminUser.companyName} 전용 설문지</span>
               </button>
 
               <button
                 onClick={() => setActiveTab('RESULT')}
-                className={`px-4 py-1.5 rounded-md transition-colors whitespace-nowrap shrink-0 flex items-center gap-2 ${
+                className={`px-3.5 py-1.5 rounded-md transition-colors whitespace-nowrap shrink-0 flex items-center gap-1.5 cursor-pointer ${
                   activeTab === 'RESULT'
                     ? 'bg-blue-600 text-white font-semibold shadow-xs'
                     : 'text-slate-300 hover:text-white hover:bg-slate-800/80'
                 } ${!hasSubmission ? 'opacity-80' : ''}`}
               >
                 <Sparkles className="w-4 h-4" />
-                <span>내 진단 결과</span>
+                <span>참여자 결과 조회</span>
+              </button>
+            </nav>
+          ) : (
+            /* Section 3: Survey Respondent View (Isolated per Company Link) */
+            <nav className="hidden md:flex items-center gap-2 text-sm font-medium">
+              <button
+                onClick={() => setActiveTab('SURVEY')}
+                className={`px-4 py-1.5 rounded-md transition-colors whitespace-nowrap shrink-0 flex items-center gap-2 cursor-pointer ${
+                  activeTab === 'SURVEY'
+                    ? 'bg-blue-600 text-white font-semibold shadow-xs'
+                    : 'text-slate-300 hover:text-white hover:bg-slate-800/80'
+                }`}
+              >
+                <UserCheck className="w-4 h-4" />
+                <span>{dedicatedCompanyName ? `[${dedicatedCompanyName}] 설문 참여` : 'AI FIT 16 진단 참여'}</span>
+              </button>
+
+              <button
+                onClick={() => setActiveTab('RESULT')}
+                className={`px-4 py-1.5 rounded-md transition-colors whitespace-nowrap shrink-0 flex items-center gap-2 cursor-pointer ${
+                  activeTab === 'RESULT'
+                    ? 'bg-blue-600 text-white font-semibold shadow-xs'
+                    : 'text-slate-300 hover:text-white hover:bg-slate-800/80'
+                } ${!hasSubmission ? 'opacity-80' : ''}`}
+              >
+                <Sparkles className="w-4 h-4" />
+                <span>{dedicatedCompanyName ? `[${dedicatedCompanyName}] 내 결과 조회` : '내 진단 결과'}</span>
               </button>
             </nav>
           )}
@@ -187,7 +228,7 @@ export const Header: React.FC<HeaderProps> = ({
                     <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
                     <span className="text-white font-bold">{adminUser.name}</span>
                     <span className="text-[10px] bg-blue-500/20 text-blue-300 border border-blue-400/30 px-1.5 py-0.2 rounded font-semibold">
-                      {adminUser.role === 'MASTER' ? '최고관리자' : '기업관리자'}
+                      {adminUser.role === 'MASTER' ? '본사 관리자' : '기업별 링크 관리자'}
                     </span>
                   </div>
                   {onAdminLogout && (
@@ -250,10 +291,12 @@ export const Header: React.FC<HeaderProps> = ({
               <button
                 onClick={onOpenAdminLogin}
                 className="px-2.5 py-1.5 text-xs text-slate-400 hover:text-slate-200 hover:bg-slate-800/80 border border-slate-800 hover:border-slate-700 rounded-lg transition-colors flex items-center gap-1.5 cursor-pointer"
-                title="관리자 전용 로그인 (관리자만 접근 가능)"
+                title={dedicatedCompanyName ? `${dedicatedCompanyName} 링크 관리자 로그인` : '본사 / 기업 관리자 로그인'}
               >
                 <Shield className="w-3.5 h-3.5 text-slate-400" />
-                <span className="text-[11px] font-medium">관리자</span>
+                <span className="text-[11px] font-medium">
+                  {dedicatedCompanyName ? `${dedicatedCompanyName} 관리자` : '본사/기업 관리자'}
+                </span>
               </button>
             )}
           </div>
@@ -261,19 +304,19 @@ export const Header: React.FC<HeaderProps> = ({
 
         {/* Mobile Nav strip */}
         <div className="md:hidden flex items-center justify-around py-2 border-t border-slate-800 text-xs">
-          {adminUser ? (
+          {adminUser?.role === 'MASTER' ? (
             <>
-              <button
-                onClick={() => setActiveTab('ADMIN')}
-                className={`py-1 px-2 rounded ${activeTab === 'ADMIN' ? 'text-blue-400 font-bold' : 'text-slate-400'}`}
-              >
-                분석대시보드
-              </button>
               <button
                 onClick={() => setActiveTab('LINKS')}
                 className={`py-1 px-2 rounded ${activeTab === 'LINKS' ? 'text-blue-400 font-bold' : 'text-slate-400'}`}
               >
-                링크관리
+                본사링크생성
+              </button>
+              <button
+                onClick={() => setActiveTab('ADMIN')}
+                className={`py-1 px-2 rounded ${activeTab === 'ADMIN' ? 'text-blue-400 font-bold' : 'text-slate-400'}`}
+              >
+                통합대시보드
               </button>
               <button
                 onClick={() => setActiveTab('SURVEY')}
@@ -288,13 +331,34 @@ export const Header: React.FC<HeaderProps> = ({
                 내결과
               </button>
             </>
+          ) : adminUser?.role === 'COMPANY_MANAGER' ? (
+            <>
+              <button
+                onClick={() => setActiveTab('ADMIN')}
+                className={`py-1 px-2 rounded ${activeTab === 'ADMIN' ? 'text-blue-400 font-bold' : 'text-slate-400'}`}
+              >
+                참여자관리
+              </button>
+              <button
+                onClick={() => setActiveTab('SURVEY')}
+                className={`py-1 px-2 rounded ${activeTab === 'SURVEY' ? 'text-blue-400 font-bold' : 'text-slate-400'}`}
+              >
+                전용설문지
+              </button>
+              <button
+                onClick={() => setActiveTab('RESULT')}
+                className={`py-1 px-2 rounded ${activeTab === 'RESULT' ? 'text-blue-400 font-bold' : 'text-slate-400'}`}
+              >
+                결과조회
+              </button>
+            </>
           ) : (
             <>
               <button
                 onClick={() => setActiveTab('SURVEY')}
                 className={`py-1 px-3 rounded font-medium ${activeTab === 'SURVEY' ? 'text-blue-400 font-bold' : 'text-slate-400'}`}
               >
-                {dedicatedCompanyName ? `${dedicatedCompanyName} 설문지` : '설문 진단'}
+                {dedicatedCompanyName ? `${dedicatedCompanyName} 설문` : '설문 진단'}
               </button>
               <button
                 onClick={() => setActiveTab('RESULT')}

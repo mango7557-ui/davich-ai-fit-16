@@ -354,7 +354,8 @@ export function saveAdminSession(user: AdminUser | null) {
 
 export function authenticateAdmin(
   username: string,
-  password: string
+  password: string,
+  targetCompanyId?: string | null
 ): { success: boolean; user?: AdminUser; message: string } {
   const cleanUser = username.trim();
   const cleanPass = password.trim();
@@ -366,7 +367,7 @@ export function authenticateAdmin(
     return { success: false, message: '비밀번호를 입력해 주세요.' };
   }
 
-  // 1. Verify Master Admin (아이디: 한재환, 비번: 1234)
+  // 1. Verify HQ Master Admin (본사 총괄 마스터 관리자: 한재환 / 1234)
   if (
     cleanUser.toLowerCase() === MASTER_ADMIN_ACCOUNT.username.toLowerCase() &&
     cleanPass === MASTER_ADMIN_ACCOUNT.password
@@ -381,13 +382,54 @@ export function authenticateAdmin(
     return {
       success: true,
       user,
-      message: '마스터 관리자(한재환)로 로그인되었습니다.',
+      message: '본사 총괄 마스터 관리자(한재환)로 로그인되었습니다.',
     };
   }
 
   // 2. Verify Company Manager credentials
   const state = getStoredState();
   const normalizedUser = cleanUser.replace(/\s+/g, '').toLowerCase();
+
+  // If logging into a specific company link section, strictly validate against that company
+  if (targetCompanyId) {
+    const targetComp = state.companies.find((c) => c.id === targetCompanyId);
+    if (targetComp) {
+      const isIdMatch =
+        (targetComp.managerId && targetComp.managerId.toLowerCase() === cleanUser.toLowerCase()) ||
+        (targetComp.managerId && targetComp.managerId.replace(/\s+/g, '').toLowerCase() === normalizedUser) ||
+        (targetComp.code && targetComp.code.toLowerCase() === cleanUser.toLowerCase());
+
+      if (!isIdMatch) {
+        return {
+          success: false,
+          message: `[${targetComp.name}] 전용 링크의 관리자 아이디가 일치하지 않습니다. 해당 링크 생성 시 지정된 관리자 아이디를 입력해 주세요.`,
+        };
+      }
+
+      const validPass = (targetComp.managerPassword || '1234').trim();
+      if (cleanPass !== validPass) {
+        return {
+          success: false,
+          message: `[${targetComp.name}] 관리자 비밀번호가 일치하지 않습니다.`,
+        };
+      }
+
+      const user: AdminUser = {
+        id: `admin_${targetComp.id}`,
+        username: targetComp.managerId || targetComp.code,
+        name: `${targetComp.name} 관리자`,
+        role: 'COMPANY_MANAGER',
+        companyId: targetComp.id,
+        companyName: targetComp.name,
+      };
+      saveAdminSession(user);
+      return {
+        success: true,
+        user,
+        message: `${targetComp.name} 전용 링크 관리자로 로그인되었습니다.`,
+      };
+    }
+  }
 
   const matchedComp = state.companies.find((c) => {
     if (c.managerId && c.managerId.toLowerCase() === cleanUser.toLowerCase()) return true;
@@ -418,14 +460,14 @@ export function authenticateAdmin(
     } else {
       return {
         success: false,
-        message: '비밀번호가 일치하지 않습니다. (기본: 1234)',
+        message: '비밀번호가 일치하지 않습니다.',
       };
     }
   }
 
   return {
     success: false,
-    message: '등록된 관리자 계정을 찾을 수 없습니다. (마스터 계정: 한재환 / 비번 1234)',
+    message: '등록된 관리자 계정을 찾을 수 없습니다. 본사 관리자 또는 기업별 지정 관리자 계정을 확인해 주세요.',
   };
 }
 

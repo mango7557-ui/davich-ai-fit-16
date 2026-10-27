@@ -23,12 +23,16 @@ export default function App() {
   const [store, setStore] = useState<StorageState>(getStoredState());
   const [adminUser, setAdminUser] = useState<AdminUser | null>(() => getSavedAdminSession());
   const [activeTab, setActiveTab] = useState<'LINKS' | 'SURVEY' | 'RESULT' | 'ADMIN'>(() => {
-    // Authenticated admins land on ADMIN dashboard; employees land strictly on SURVEY
     const saved = getSavedAdminSession();
-    return saved ? 'ADMIN' : 'SURVEY';
+    if (saved?.role === 'MASTER') return 'LINKS';
+    if (saved?.role === 'COMPANY_MANAGER') return 'ADMIN';
+    return 'SURVEY';
   });
   const [selectedCompanyCode, setSelectedCompanyCode] = useState<string | null>(null);
-  const [selectedAdminCompanyId, setSelectedAdminCompanyId] = useState<string>('ALL');
+  const [selectedAdminCompanyId, setSelectedAdminCompanyId] = useState<string>(() => {
+    const saved = getSavedAdminSession();
+    return saved?.role === 'COMPANY_MANAGER' && saved.companyId ? saved.companyId : 'ALL';
+  });
   const [isDedicatedSurveyMode, setIsDedicatedSurveyMode] = useState<boolean>(false);
   const [headerLoginCompany, setHeaderLoginCompany] = useState<Company | null>(null);
 
@@ -51,16 +55,35 @@ export default function App() {
     return () => unsubscribe();
   }, []);
 
-  // Parse URL query parameter (?company=...)
+  // Parse URL query parameter (?company=...) and isolate section strictly per company link
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
       const companyParam = params.get('company');
       if (companyParam) {
-        getOrCreateCompanyByCode(companyParam);
+        const comp = getOrCreateCompanyByCode(companyParam);
         setSelectedCompanyCode(companyParam);
         setIsDedicatedSurveyMode(true);
-        setActiveTab('SURVEY');
+
+        // Isolate Admin Session: if logged in as a DIFFERENT company's manager, clear session
+        const savedAdmin = getSavedAdminSession();
+        if (savedAdmin && savedAdmin.role === 'COMPANY_MANAGER' && savedAdmin.companyId !== comp.id) {
+          saveAdminSession(null);
+          setAdminUser(null);
+          setActiveTab('SURVEY');
+        } else if (savedAdmin && savedAdmin.role === 'COMPANY_MANAGER' && savedAdmin.companyId === comp.id) {
+          setSelectedAdminCompanyId(comp.id);
+          setActiveTab('ADMIN');
+        } else {
+          setActiveTab('SURVEY');
+        }
+
+        // Isolate Respondent Session: if previous respondent belongs to another company link, clear it
+        const respSession = getSavedRespondentSession();
+        if (respSession && respSession.companyId !== comp.id) {
+          saveRespondentSession(null);
+          setLatestSubmission(null);
+        }
       }
     }
   }, []);
@@ -76,10 +99,13 @@ export default function App() {
     (c) => c.code.toLowerCase() === selectedCompanyCode?.toLowerCase()
   );
 
-  const activeTargetCompany =
-    store.companies.find((c) => c.code.toLowerCase() === selectedCompanyCode?.toLowerCase()) ||
-    dedicatedCompany ||
-    (store.companies.length > 0 ? store.companies[0] : null);
+  // If logged in as a Company Manager, strictly lock their company context
+  const managerCompany =
+    adminUser?.role === 'COMPANY_MANAGER' && adminUser.companyId
+      ? store.companies.find((c) => c.id === adminUser.companyId) || null
+      : null;
+
+  const effectiveDedicatedCompany = managerCompany || (isDedicatedSurveyMode ? dedicatedCompany || null : null);
 
   // Action handlers
   const handleSelectCompanyForSurvey = (companyCode: string) => {
@@ -104,22 +130,21 @@ export default function App() {
     setActiveTab('RESULT');
   };
 
-  const handleExitDedicatedMode = () => {
-    setIsDedicatedSurveyMode(false);
-    if (adminUser) {
-      setActiveTab('ADMIN');
-    } else {
-      setActiveTab('SURVEY');
-    }
-  };
-
   const handleLoginSuccess = (user: AdminUser) => {
     setAdminUser(user);
     saveAdminSession(user);
     if (user.role === 'COMPANY_MANAGER' && user.companyId) {
+      const comp = store.companies.find((c) => c.id === user.companyId);
+      if (comp) {
+        setSelectedCompanyCode(comp.code);
+        setIsDedicatedSurveyMode(true);
+      }
       setSelectedAdminCompanyId(user.companyId);
+      setActiveTab('ADMIN');
+    } else {
+      // Master Admin lands on HQ Company Link Creation & Management section
+      setActiveTab('LINKS');
     }
-    setActiveTab('ADMIN');
   };
 
   return (
@@ -129,11 +154,11 @@ export default function App() {
         activeTab={activeTab}
         setActiveTab={setActiveTab}
         hasSubmission={latestSubmission !== null || store.submissions.length > 0}
-        isDedicatedSurveyMode={isDedicatedSurveyMode}
-        dedicatedCompanyName={dedicatedCompany?.name}
+        isDedicatedSurveyMode={isDedicatedSurveyMode || adminUser?.role === 'COMPANY_MANAGER'}
+        dedicatedCompanyName={effectiveDedicatedCompany?.name || dedicatedCompany?.name}
         onExitDedicatedMode={() => {
           if (adminUser) {
-            setActiveTab('ADMIN');
+            setActiveTab(adminUser.role === 'MASTER' ? 'LINKS' : 'ADMIN');
           } else {
             setActiveTab('SURVEY');
           }
@@ -142,7 +167,16 @@ export default function App() {
         onAdminLogout={() => {
           saveAdminSession(null);
           setAdminUser(null);
-          setIsDedicatedSurveyMode(false);
+          if (typeof window !== 'undefined') {
+            const params = new URLSearchParams(window.location.search);
+            const companyParam = params.get('company');
+            if (companyParam) {
+              setSelectedCompanyCode(companyParam);
+              setIsDedicatedSurveyMode(true);
+            } else {
+              setIsDedicatedSurveyMode(false);
+            }
+          }
           setActiveTab('SURVEY');
         }}
         onOpenAdminLogin={() => {
@@ -155,16 +189,16 @@ export default function App() {
         {activeTab === 'LINKS' && (
           !adminUser ? (
             <AdminLoginGate
-              targetCompany={activeTargetCompany}
+              targetCompany={effectiveDedicatedCompany}
+              isDedicatedLink={isDedicatedSurveyMode}
               companies={store.companies}
               onSelectCompany={(comp) => setSelectedCompanyCode(comp.code)}
               onLoginSuccess={handleLoginSuccess}
               onCancelToSurvey={() => {
-                setIsDedicatedSurveyMode(true);
                 setActiveTab('SURVEY');
               }}
             />
-          ) : (
+          ) : adminUser.role === 'MASTER' ? (
             <CompanyLinkManager
               companies={store.companies}
               submissionCounts={submissionCounts}
@@ -173,25 +207,46 @@ export default function App() {
               onAdminLogin={handleLoginSuccess}
               adminUser={adminUser}
             />
+          ) : (
+            <AdminDashboard
+              companies={store.companies}
+              submissions={store.submissions}
+              assignments={store.assignments}
+              automationTasks={store.automationTasks}
+              selectedCompanyId={adminUser.companyId || selectedAdminCompanyId}
+              onSelectCompanyId={setSelectedAdminCompanyId}
+              onViewPersonalReport={(sub) => setModalSubmission(sub)}
+              onNavigateToLinks={() => setActiveTab('ADMIN')}
+              onNavigateToSurvey={handleSelectCompanyForSurvey}
+              adminUser={adminUser}
+            />
           )
         )}
 
         {activeTab === 'SURVEY' && (
           <SurveyView
             companies={store.companies}
-            selectedCompanyCode={selectedCompanyCode}
+            selectedCompanyCode={effectiveDedicatedCompany?.code || selectedCompanyCode}
             onSubmissionComplete={handleSubmissionComplete}
             onNavigateToLinks={() => {
-              setIsDedicatedSurveyMode(false);
-              setActiveTab('LINKS');
+              if (adminUser?.role === 'MASTER') {
+                setIsDedicatedSurveyMode(false);
+                setActiveTab('LINKS');
+              } else {
+                setActiveTab('ADMIN');
+              }
             }}
-            isDedicatedMode={isDedicatedSurveyMode}
+            isDedicatedMode={isDedicatedSurveyMode || adminUser?.role === 'COMPANY_MANAGER'}
           />
         )}
 
         {activeTab === 'RESULT' && (
           <PersonalResultView
-            submission={latestSubmission}
+            submission={
+              effectiveDedicatedCompany && latestSubmission && latestSubmission.companyId !== effectiveDedicatedCompany.id
+                ? null
+                : latestSubmission
+            }
             onRetake={() => setActiveTab('SURVEY')}
             onGoToAdmin={() => {
               if (adminUser) {
@@ -208,19 +263,20 @@ export default function App() {
               setLatestSubmission(null);
             }}
             companies={store.companies}
-            initialCompanyId={dedicatedCompany?.id}
+            initialCompanyId={effectiveDedicatedCompany?.id || dedicatedCompany?.id}
+            lockedCompany={effectiveDedicatedCompany}
           />
         )}
 
         {activeTab === 'ADMIN' && (
           !adminUser ? (
             <AdminLoginGate
-              targetCompany={activeTargetCompany}
+              targetCompany={effectiveDedicatedCompany}
+              isDedicatedLink={isDedicatedSurveyMode}
               companies={store.companies}
               onSelectCompany={(comp) => setSelectedCompanyCode(comp.code)}
               onLoginSuccess={handleLoginSuccess}
               onCancelToSurvey={() => {
-                setIsDedicatedSurveyMode(true);
                 setActiveTab('SURVEY');
               }}
             />
@@ -230,7 +286,7 @@ export default function App() {
               submissions={store.submissions}
               assignments={store.assignments}
               automationTasks={store.automationTasks}
-              selectedCompanyId={selectedAdminCompanyId}
+              selectedCompanyId={adminUser.role === 'COMPANY_MANAGER' && adminUser.companyId ? adminUser.companyId : selectedAdminCompanyId}
               onSelectCompanyId={setSelectedAdminCompanyId}
               onViewPersonalReport={(sub) => setModalSubmission(sub)}
               onNavigateToLinks={() => setActiveTab('LINKS')}

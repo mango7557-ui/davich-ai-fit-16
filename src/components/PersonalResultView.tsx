@@ -39,6 +39,7 @@ interface PersonalResultViewProps {
   onClearSession?: () => void;
   companies?: Company[];
   initialCompanyId?: string;
+  lockedCompany?: Company | null;
 }
 
 export const PersonalResultView: React.FC<PersonalResultViewProps> = ({
@@ -49,10 +50,11 @@ export const PersonalResultView: React.FC<PersonalResultViewProps> = ({
   onClearSession,
   companies = [],
   initialCompanyId,
+  lockedCompany = null,
 }) => {
   const [lookupName, setLookupName] = useState('');
   const [lookupPass, setLookupPass] = useState('');
-  const [lookupCompanyId, setLookupCompanyId] = useState(initialCompanyId || '');
+  const [lookupCompanyId, setLookupCompanyId] = useState(lockedCompany?.id || initialCompanyId || '');
   const [lookupError, setLookupError] = useState<string | null>(null);
   const [quizFilter, setQuizFilter] = useState<'ALL' | 'WRONG' | 'CORRECT'>('ALL');
   const [isQuizOpen, setIsQuizOpen] = useState<boolean>(true);
@@ -73,8 +75,9 @@ export const PersonalResultView: React.FC<PersonalResultViewProps> = ({
       return;
     }
 
+    const targetCompId = lockedCompany ? lockedCompany.id : lookupCompanyId || null;
     const authRes = authenticateRespondent(
-      lookupCompanyId || null,
+      targetCompId,
       cleanName,
       cleanPass
     );
@@ -107,9 +110,19 @@ export const PersonalResultView: React.FC<PersonalResultViewProps> = ({
               className="w-full h-full object-contain"
             />
           </div>
-          <h2 className="text-2xl font-bold text-slate-900">내 진단 결과 조회 (본인 확인)</h2>
+          <h2 className="text-2xl font-bold text-slate-900">
+            {lockedCompany ? `[${lockedCompany.name}] 내 진단 결과 조회` : '내 진단 결과 조회 (본인 확인)'}
+          </h2>
           <p className="text-xs text-slate-500 leading-relaxed max-w-md mx-auto">
-            개인정보 및 성향 분석 보호를 위해 <strong>설문 참여자 본인의 성명과 비밀번호</strong>를 입력하시면 작성하신 리포트를 열람하실 수 있습니다.
+            {lockedCompany ? (
+              <>
+                <strong>{lockedCompany.name}</strong> 전용 링크에서 참여하신 설문 결과입니다. 설문 작성 시 등록한 <strong>본인의 성명과 비밀번호</strong>를 입력해 주세요.
+              </>
+            ) : (
+              <>
+                개인정보 및 성향 분석 보호를 위해 <strong>설문 참여자 본인의 성명과 비밀번호</strong>를 입력하시면 작성하신 리포트를 열람하실 수 있습니다.
+              </>
+            )}
           </p>
         </div>
 
@@ -117,9 +130,9 @@ export const PersonalResultView: React.FC<PersonalResultViewProps> = ({
         <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-7 shadow-xl space-y-5">
           <div className="flex items-center gap-2 pb-3 border-b border-slate-100 text-xs font-semibold text-slate-700">
             <Lock className="w-4 h-4 text-blue-600" />
-            <span>설문 참여자 본인 인증</span>
+            <span>{lockedCompany ? `${lockedCompany.name} 설문 참여자 본인 인증` : '설문 참여자 본인 인증'}</span>
             <span className="ml-auto text-[11px] text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full font-bold">
-              타인 열람 불가
+              독립 섹션 보호
             </span>
           </div>
 
@@ -131,27 +144,40 @@ export const PersonalResultView: React.FC<PersonalResultViewProps> = ({
           )}
 
           <form onSubmit={handleLookup} className="space-y-4 text-xs">
-            {companies.length > 0 && (
+            {lockedCompany ? (
               <div>
                 <label className="block text-slate-700 font-semibold mb-1">
-                  소속 기업 (선택)
+                  소속 기업/매장 (전용 링크 고정)
                 </label>
-                <div className="relative">
-                  <Building2 className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                  <select
-                    value={lookupCompanyId}
-                    onChange={(e) => setLookupCompanyId(e.target.value)}
-                    className="w-full pl-9 pr-3 py-2.5 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
-                  >
-                    <option value="">전체 기업에서 검색</option>
-                    {companies.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.name}
-                      </option>
-                    ))}
-                  </select>
+                <div className="px-3.5 py-2.5 text-xs bg-blue-50/70 border border-blue-200 rounded-xl font-bold text-blue-900 flex items-center gap-2">
+                  <Building2 className="w-4 h-4 text-blue-600 shrink-0" />
+                  <span>{lockedCompany.name}</span>
+                  <span className="text-[10px] font-mono text-blue-600 ml-auto">/{lockedCompany.code}</span>
                 </div>
               </div>
+            ) : (
+              companies.length > 0 && (
+                <div>
+                  <label className="block text-slate-700 font-semibold mb-1">
+                    소속 기업 (선택)
+                  </label>
+                  <div className="relative">
+                    <Building2 className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                    <select
+                      value={lookupCompanyId}
+                      onChange={(e) => setLookupCompanyId(e.target.value)}
+                      className="w-full pl-9 pr-3 py-2.5 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                    >
+                      <option value="">전체 기업에서 검색</option>
+                      {companies.map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {c.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              )
             )}
 
             <div>
