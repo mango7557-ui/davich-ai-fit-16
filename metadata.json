@@ -1,0 +1,6 @@
+{
+  "name": "DAVICH AI FIT 16",
+  "description": "다비치안경 및 기업별 전용 링크 발급, 직원 AI 역량 및 16개 업무 성향 진단, 통합 관리자 분석 대시보드",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
