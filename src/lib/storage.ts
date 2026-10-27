@@ -358,8 +358,8 @@ export function authenticateAdmin(
   targetCompanyId?: string | null,
   requireMasterOnly?: boolean
 ): { success: boolean; user?: AdminUser; message: string } {
-  const cleanUser = username.trim();
-  const cleanPass = password.trim();
+  const cleanUser = username.trim().normalize('NFC');
+  const cleanPass = password.trim().normalize('NFC');
 
   if (!cleanUser) {
     return { success: false, message: '관리자 아이디를 입력해 주세요.' };
@@ -369,9 +369,11 @@ export function authenticateAdmin(
   }
 
   // 1. Verify HQ Master Admin (본사 총괄 마스터 관리자: 한재환 / 1234)
+  const masterUser = MASTER_ADMIN_ACCOUNT.username.normalize('NFC').toLowerCase();
+  const masterPass = MASTER_ADMIN_ACCOUNT.password.normalize('NFC');
   if (
-    cleanUser.toLowerCase() === MASTER_ADMIN_ACCOUNT.username.toLowerCase() &&
-    cleanPass === MASTER_ADMIN_ACCOUNT.password
+    (cleanUser.toLowerCase() === masterUser || cleanUser.replace(/\s+/g, '').toLowerCase() === masterUser) &&
+    cleanPass === masterPass
   ) {
     const user: AdminUser = {
       id: 'master-admin',
