@@ -9,6 +9,7 @@ import {
   MASTER_ADMIN_ACCOUNTS,
 } from '../types/davich';
 import { evaluateAssessmentScores, calculateAutomationPriority } from './assessmentEngine';
+import { QUIZ_QUESTIONS } from '../data/questionBank';
 
 const STORAGE_KEY = 'davich_ai_fit16_store_v1';
 
@@ -901,19 +902,16 @@ export function loadSampleDataset() {
       capabilityAnswers[qId] = Math.max(1, Math.min(5, Math.round(staff.cap / 25 + (c % 2 === 0 ? 0.3 : -0.3))));
     }
 
-    // 15 실전 문제 풀이 응답 생성
+    // 15 실전 문제 풀이 응답 생성 (초급 5 · 중급 5 · 상급 5)
     const quizAnswers: Record<string, number> = {};
     const targetCorrect = Math.max(6, Math.min(15, Math.round((staff.cap / 100) * 15)));
-    for (let q = 1; q <= 15; q++) {
-      const qId = `Q${String(q).padStart(2, '0')}`;
-      // Q01..Q15 correctAnswer is 2 for all except Q02 (1) and Q09 (1)
-      const correctChoice = (q === 2 || q === 9) ? 1 : 2;
-      if (q <= targetCorrect) {
-        quizAnswers[qId] = correctChoice;
+    QUIZ_QUESTIONS.forEach((quizQ, qIdx) => {
+      if (qIdx + 1 <= targetCorrect) {
+        quizAnswers[quizQ.id] = quizQ.correctAnswer;
       } else {
-        quizAnswers[qId] = correctChoice === 1 ? 2 : 1; // Wrong choice
+        quizAnswers[quizQ.id] = quizQ.correctAnswer === 1 ? 2 : 1; // Wrong choice
       }
-    }
+    });
 
     const preferenceAnswers: Record<string, 1 | 2> = {};
     const pCode = staff.pref;

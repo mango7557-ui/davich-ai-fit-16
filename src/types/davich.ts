@@ -93,14 +93,18 @@ export interface QuizQuestionOption {
   text: string;
 }
 
+export type QuizDifficulty = 'BASIC' | 'INTERMEDIATE' | 'ADVANCED';
+
 export interface QuizQuestion {
   id: string; // Q01 ~ Q15
+  difficulty?: QuizDifficulty; // BASIC(초급 5), INTERMEDIATE(중급 5), ADVANCED(상급 5)
+  difficultyLabel?: string;
   category: 'PROMPT' | 'VERIFICATION' | 'SECURITY' | 'AUTOMATION' | 'ETHICS';
   categoryLabel: string;
   scenario: string; // 실무 상황 시나리오
   question: string;
   options: QuizQuestionOption[];
-  correctAnswer: number; // 1, 2, 3, or 4
+  correctAnswer: number; // 1 ~ 5
   explanation: string; // 정답 및 오답 상세 해설
   davichTip?: string; // 다비치 현장 적용 팁
 }
@@ -111,6 +115,10 @@ export interface AssessmentScores {
   quizScore?: number;      // 0 ~ 100 (15문항 실전문항 정답 환산 점수)
   quizCorrectCount?: number; // 0 ~ 15
   quizTotalCount?: number;   // 15
+  quizBasicCorrect?: number;        // 초급 0 ~ 5
+  quizIntermediateCorrect?: number; // 중급 0 ~ 5
+  quizAdvancedCorrect?: number;     // 상급 0 ~ 5
+  quizLevelLabel?: string;          // 개인 AI 활용 능력 평가 등급
   quizDetails?: {
     questionId: string;
     selectedAnswer: number;

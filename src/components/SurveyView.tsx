@@ -303,7 +303,7 @@ export const SurveyView: React.FC<SurveyViewProps> = ({
     return true;
   };
 
-  // Step 1 validation (Usage: 8 questions)
+  // Step 1 validation (Usage: 10 questions)
   const validateStep1 = () => {
     if (!usageAnswers['U01']) {
       setErrorMsg('U01: AI 도구 사용 빈도를 선택해 주세요.');
@@ -313,19 +313,8 @@ export const SurveyView: React.FC<SurveyViewProps> = ({
     return true;
   };
 
-  // Step 2 validation (Quiz: 15 questions)
+  // Step 2 validation (Capability: 20 questions)
   const validateStep2 = () => {
-    const answeredCount = Object.keys(quizAnswers).length;
-    if (answeredCount < QUIZ_QUESTIONS.length) {
-      setErrorMsg(`실전 AI 문제 풀이 15문항 중 ${answeredCount}문항만 응답되었습니다. 모든 문제의 보기를 선택해 주세요.`);
-      return false;
-    }
-    setErrorMsg(null);
-    return true;
-  };
-
-  // Step 3 validation (Capability: 20 questions)
-  const validateStep3 = () => {
     const answeredCount = Object.keys(capabilityAnswers).length;
     if (answeredCount < CAPABILITY_QUESTIONS.length) {
       setErrorMsg(`AI 실무 역량 20문항 중 ${answeredCount}개만 응답되었습니다. 모든 문항에 응답해 주세요.`);
@@ -335,8 +324,8 @@ export const SurveyView: React.FC<SurveyViewProps> = ({
     return true;
   };
 
-  // Step 4 validation (Preference: 24 questions)
-  const validateStep4 = () => {
+  // Step 3 validation (Preference: 24 questions)
+  const validateStep3 = () => {
     const answeredCount = Object.keys(preferenceAnswers).length;
     if (answeredCount < PREFERENCE_QUESTIONS.length) {
       setErrorMsg(`업무 성향 24문항 중 ${answeredCount}개만 선택되었습니다. 모든 비교 문항에 응답해 주세요.`);
@@ -346,10 +335,21 @@ export const SurveyView: React.FC<SurveyViewProps> = ({
     return true;
   };
 
-  // Step 5 validation (Automation)
-  const validateStep5 = () => {
+  // Step 4 validation (Automation)
+  const validateStep4 = () => {
     if (!hasNoTask && !taskName.trim()) {
       setErrorMsg('개선하고 싶은 반복 업무명을 입력하거나, [현재 제안할 업무가 없음]을 체크해 주세요.');
+      return false;
+    }
+    setErrorMsg(null);
+    return true;
+  };
+
+  // Step 5 validation (Final Practical AI Ability Evaluation Quiz: 15 questions - Basic 5, Intermediate 5, Advanced 5)
+  const validateStep5 = () => {
+    const answeredCount = Object.keys(quizAnswers).length;
+    if (answeredCount < QUIZ_QUESTIONS.length) {
+      setErrorMsg(`개인 AI 활용 능력 평가 15문항(초급 5·중급 5·상급 5) 중 ${answeredCount}문항만 응답되었습니다. 모든 문제의 보기를 선택해 주세요.`);
       return false;
     }
     setErrorMsg(null);
@@ -671,17 +671,17 @@ export const SurveyView: React.FC<SurveyViewProps> = ({
           <span className="font-medium text-slate-700">
             {currentStep === 0 && '응답자 정보 & 보안 서약'}
             {currentStep === 1 && '1. AI 사용 현황 및 환경 (10문항)'}
-            {currentStep === 2 && '2. 실전 AI 문제 풀이 (15문항)'}
-            {currentStep === 3 && '3. AI 실무 역량 자가진단 (20문항)'}
-            {currentStep === 4 && '4. AI 업무 성향 진단 (24문항)'}
-            {currentStep === 5 && '5. 업무 자동화 기회 발굴 (5문항)'}
+            {currentStep === 2 && '2. AI 실무 역량 자가진단 (20문항)'}
+            {currentStep === 3 && '3. AI 업무 성향 진단 (24문항)'}
+            {currentStep === 4 && '4. 업무 자동화 기회 발굴 (5문항)'}
+            {currentStep === 5 && '5. 개인 AI 활용 능력 평가 (초급5·중급5·상급5)'}
             {currentStep === 6 && '6. 최종 종합 검토 및 결과 리포트 발행'}
           </span>
         </div>
 
         {/* Segmented Step Bar (7 Steps) */}
         <div className="grid grid-cols-7 gap-1.5">
-          {['기본정보', '사용현황', '실전문제', '역량진단', '업무성향', '자동화과제', '최종제출'].map((label, idx) => (
+          {['기본정보', '사용현황', '역량진단', '업무성향', '자동화과제', '실전평가', '최종제출'].map((label, idx) => (
             <div key={label} className="space-y-1">
               <div
                 className={`h-2 rounded-full transition-all duration-300 ${
@@ -1322,129 +1322,13 @@ export const SurveyView: React.FC<SurveyViewProps> = ({
         </div>
       )}
 
-      {/* Step 2: 실전 AI 문제 풀이 & 비즈니스 상황 진단 (15문항) */}
+      {/* Step 2: AI 실무 역량 자가진단 (C01~C20, 5점 리커트 척도) */}
       {currentStep === 2 && (
-        <div className="bg-white border border-slate-200 rounded-2xl p-6 sm:p-8 shadow-sm space-y-6">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">
-            <div className="space-y-1">
-              <div className="flex items-center gap-2">
-                <span className="w-6 h-6 rounded-lg bg-blue-600 text-white flex items-center justify-center text-xs font-bold shadow-2xs">
-                  <GraduationCap className="w-3.5 h-3.5" />
-                </span>
-                <h2 className="text-xl font-bold text-slate-900">
-                  2. 실전 AI 문제 풀이 & 비즈니스 상황 진단 (15문항)
-                </h2>
-              </div>
-              <p className="text-xs text-slate-500 leading-relaxed">
-                프롬프트 작성, 환각 팩트체크, 개인정보 보호, 자동화 기법의 5지선다형 실전 문제입니다. 정답률은 결과 리포트의 <strong className="text-blue-700">[AI 실전 문제 풀이 점수]</strong>에 직접 반영됩니다.
-              </p>
-            </div>
-            <div className="text-xs font-semibold text-blue-700 bg-blue-50 px-3.5 py-1.5 rounded-full border border-blue-200/80 self-start sm:self-auto tabular-nums flex items-center gap-1.5 shrink-0 shadow-2xs">
-              <span className="w-2 h-2 rounded-full bg-blue-600 animate-pulse" />
-              <span>진행: {Object.keys(quizAnswers).length} / {QUIZ_QUESTIONS.length}문항 완료</span>
-            </div>
-          </div>
-
-          <div className="space-y-6 pt-1">
-            {QUIZ_QUESTIONS.map((q, idx) => {
-              const currentChoice = quizAnswers[q.id];
-
-              return (
-                <div
-                  key={q.id}
-                  className={`p-5 rounded-2xl border transition-all space-y-3.5 ${
-                    currentChoice
-                      ? 'bg-white border-blue-200 shadow-xs'
-                      : 'bg-slate-50/70 border-slate-200'
-                  }`}
-                >
-                  {/* Category & Question Header */}
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-2.5">
-                    <div className="flex items-center gap-2">
-                      <span className="px-2.5 py-0.5 rounded-lg bg-blue-600 text-white text-xs font-bold font-mono shadow-2xs">
-                        문항 {idx + 1}
-                      </span>
-                      <span className="text-[11px] font-semibold text-blue-800 bg-blue-50 border border-blue-200 px-2 py-0.5 rounded-md">
-                        {q.categoryLabel}
-                      </span>
-                    </div>
-                    <span className="text-[10px] font-mono text-slate-400">
-                      ID: {q.id} (5지선다형)
-                    </span>
-                  </div>
-
-                  {/* Real-world Scenario Box */}
-                  <div className="p-3.5 rounded-xl bg-slate-50/90 border border-slate-200/80 text-xs text-slate-700 leading-relaxed flex items-start gap-2.5">
-                    <Lightbulb className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
-                    <div>
-                      <strong className="text-slate-900 block mb-0.5 font-semibold">
-                        [실무 상황 시나리오]
-                      </strong>
-                      <span className="text-slate-600">{q.scenario}</span>
-                    </div>
-                  </div>
-
-                  {/* Question Title */}
-                  <p className="text-sm font-bold text-slate-900 leading-snug pt-1">
-                    {q.question}
-                  </p>
-
-                  {/* 5 Multiple Choice Options */}
-                  <div className="grid grid-cols-1 gap-2.5 pt-1">
-                    {q.options.map((opt) => {
-                      const isSelected = currentChoice === opt.number;
-
-                      return (
-                        <button
-                          key={opt.number}
-                          type="button"
-                          onClick={() => handleQuizChoice(q.id, opt.number)}
-                          className={`text-left p-3.5 rounded-xl text-xs font-medium border transition-all flex items-start justify-between gap-3 cursor-pointer group ${
-                            isSelected
-                              ? 'bg-blue-50/90 border-blue-600 text-blue-950 font-semibold shadow-xs ring-1 ring-blue-500/20'
-                              : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-100/70 hover:border-slate-300'
-                          }`}
-                        >
-                          <div className="flex items-start gap-2.5 flex-1 min-w-0">
-                            <span
-                              className={`w-5 h-5 rounded-full flex items-center justify-center font-mono text-xs font-bold shrink-0 mt-0.5 transition-colors ${
-                                isSelected
-                                  ? 'bg-blue-600 text-white'
-                                  : 'bg-slate-100 text-slate-600 group-hover:bg-slate-200'
-                              }`}
-                            >
-                              {opt.number}
-                            </span>
-                            <span className="leading-relaxed flex-1">{opt.text}</span>
-                          </div>
-
-                          <span
-                            className={`w-4 h-4 rounded-full border flex items-center justify-center shrink-0 mt-0.5 transition-colors ${
-                              isSelected
-                                ? 'bg-blue-600 border-blue-600 text-white'
-                                : 'border-slate-300 bg-white'
-                            }`}
-                          >
-                            {isSelected && <Check className="w-2.5 h-2.5 stroke-[3]" />}
-                          </span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
-      {/* Step 3: AI 실무 역량 자가진단 (C01~C20, 5점 리커트 척도) */}
-      {currentStep === 3 && (
         <div className="bg-white border border-slate-200 rounded-2xl p-6 sm:p-8 shadow-sm space-y-6">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-4">
             <div className="space-y-1">
               <h2 className="text-xl font-bold text-slate-900">
-                3. AI 실무 역량 자가진단 (20문항)
+                2. AI 실무 역량 자가진단 (20문항)
               </h2>
               <p className="text-xs text-slate-500">
                 프롬프트 설계(5문항), 팩트체크·검증(5문항), 보안·윤리 준수(5문항), 혁신·자동화(5문항) 총 20개 지표를 5점 척도로 측정합니다.
@@ -1519,12 +1403,12 @@ export const SurveyView: React.FC<SurveyViewProps> = ({
         </div>
       )}
 
-      {/* Step 4: AI 업무 성향 진단 (T01~T24, 24개 양자택일) */}
-      {currentStep === 4 && (
+      {/* Step 3: AI 업무 성향 진단 (T01~T24, 24개 양자택일) */}
+      {currentStep === 3 && (
         <div className="bg-white border border-slate-200 rounded-2xl p-6 sm:p-8 shadow-sm space-y-6">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-4">
             <div className="space-y-1">
-              <h2 className="text-xl font-bold text-slate-900">4. AI 업무 활용 성향 진단 (24문항)</h2>
+              <h2 className="text-xl font-bold text-slate-900">3. AI 업무 활용 성향 진단 (24문항)</h2>
               <p className="text-xs text-slate-500">
                 두 가지 보기 중 평소 자신의 업무 스타일과 더 가까운 설명을 선택해 주세요. (정답이나 우열은 없습니다)
               </p>
@@ -1597,11 +1481,11 @@ export const SurveyView: React.FC<SurveyViewProps> = ({
         </div>
       )}
 
-      {/* Step 5: 업무 자동화 기회 발굴 (A01~A05) */}
-      {currentStep === 5 && (
+      {/* Step 4: 업무 자동화 기회 발굴 (A01~A05) */}
+      {currentStep === 4 && (
         <div className="bg-white border border-slate-200 rounded-2xl p-6 sm:p-8 shadow-sm space-y-6">
           <div className="space-y-1 border-b border-slate-100 pb-4">
-            <h2 className="text-xl font-bold text-slate-900">5. 현장 업무 자동화 기회 발굴 (5문항)</h2>
+            <h2 className="text-xl font-bold text-slate-900">4. 현장 업무 자동화 기회 발굴 (5문항)</h2>
             <p className="text-xs text-slate-500">
               현재 업무 중 매주 반복되어 시간이 많이 소요되는 수작업을 제안해 주시면 관리자 대시보드에서 우선순위 분석 후 자동화 파일럿을 지원합니다.
             </p>
@@ -1737,6 +1621,204 @@ export const SurveyView: React.FC<SurveyViewProps> = ({
         </div>
       )}
 
+      {/* Step 5: 개인 AI 활용 능력 최종 평가 (초급 5문항 · 중급 5문항 · 상급 5문항, 총 15문항) */}
+      {currentStep === 5 && (
+        <div className="bg-white border border-slate-200 rounded-2xl p-6 sm:p-8 shadow-sm space-y-7">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <span className="w-6 h-6 rounded-lg bg-blue-600 text-white flex items-center justify-center text-xs font-bold shadow-2xs">
+                  <GraduationCap className="w-3.5 h-3.5" />
+                </span>
+                <h2 className="text-xl font-bold text-slate-900">
+                  5. 개인 AI 활용 능력 최종 평가 (초급 5 · 중급 5 · 상급 5)
+                </h2>
+              </div>
+              <p className="text-xs text-slate-500 leading-relaxed">
+                마지막 단계로 개인의 실질적인 AI 활용 능력을 평가합니다. <strong className="text-emerald-700">초급(기초 활용 5문항)</strong>, <strong className="text-blue-700">중급(실무 응용 5문항)</strong>, <strong className="text-purple-700">상급(심화 거버넌스 5문항)</strong> 총 15개 5지선다형 실전 문제로 구성됩니다.
+              </p>
+            </div>
+            <div className="text-xs font-semibold text-blue-700 bg-blue-50 px-3.5 py-1.5 rounded-full border border-blue-200/80 self-start sm:self-auto tabular-nums flex items-center gap-1.5 shrink-0 shadow-2xs">
+              <span className="w-2 h-2 rounded-full bg-blue-600 animate-pulse" />
+              <span>진행: {Object.keys(quizAnswers).length} / {QUIZ_QUESTIONS.length}문항 완료</span>
+            </div>
+          </div>
+
+          {/* 3-Tier Evaluation Level Summary Banner */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+            <div className="p-3.5 rounded-2xl bg-emerald-50/70 border border-emerald-200 flex items-center justify-between">
+              <div>
+                <div className="font-extrabold text-emerald-900">STEP 1 · 초급 문제 (5문항)</div>
+                <div className="text-[11px] text-emerald-700 mt-0.5">기초 프롬프트 · 개인정보 보안 · 팩트체크</div>
+              </div>
+              <span className="px-2.5 py-1 rounded-lg bg-white border border-emerald-200 font-mono font-bold text-emerald-800">
+                {QUIZ_QUESTIONS.slice(0, 5).filter((q) => quizAnswers[q.id]).length} / 5
+              </span>
+            </div>
+
+            <div className="p-3.5 rounded-2xl bg-blue-50/70 border border-blue-200 flex items-center justify-between">
+              <div>
+                <div className="font-extrabold text-blue-900">STEP 2 · 중급 문제 (5문항)</div>
+                <div className="text-[11px] text-blue-700 mt-0.5">Few-Shot · 단계별 추론 · 멀티모달 · 윤리</div>
+              </div>
+              <span className="px-2.5 py-1 rounded-lg bg-white border border-blue-200 font-mono font-bold text-blue-800">
+                {QUIZ_QUESTIONS.slice(5, 10).filter((q) => quizAnswers[q.id]).length} / 5
+              </span>
+            </div>
+
+            <div className="p-3.5 rounded-2xl bg-purple-50/70 border border-purple-200 flex items-center justify-between">
+              <div>
+                <div className="font-extrabold text-purple-900">STEP 3 · 상급 문제 (5문항)</div>
+                <div className="text-[11px] text-purple-700 mt-0.5">대량 데이터 정제 · 기밀 거버넌스 · 위기 대응</div>
+              </div>
+              <span className="px-2.5 py-1 rounded-lg bg-white border border-purple-200 font-mono font-bold text-purple-800">
+                {QUIZ_QUESTIONS.slice(10, 15).filter((q) => quizAnswers[q.id]).length} / 5
+              </span>
+            </div>
+          </div>
+
+          <div className="space-y-8 pt-1">
+            {[
+              {
+                tier: 'BASIC',
+                title: 'PART 1. 초급 AI 활용 능력 평가 (문항 1 ~ 5)',
+                subtitle: '기초 프롬프트 구조화, 페르소나 부여, 개인정보 비식별화 및 환각 팩트체크 능력을 평가합니다.',
+                headerClass: 'bg-emerald-900 text-white border-emerald-800',
+                badgeClass: 'bg-emerald-600 text-white',
+                tagClass: 'bg-emerald-50 text-emerald-800 border-emerald-200',
+                questions: QUIZ_QUESTIONS.slice(0, 5),
+                offset: 0,
+              },
+              {
+                tier: 'INTERMEDIATE',
+                title: 'PART 2. 중급 AI 활용 능력 평가 (문항 6 ~ 10)',
+                subtitle: 'Few-Shot 예시 학습, 단계별 수리 추론(CoT), 멀티모달 비전 판별 및 채용·홍보 윤리 검수 능력을 평가합니다.',
+                headerClass: 'bg-blue-950 text-white border-blue-900',
+                badgeClass: 'bg-blue-600 text-white',
+                tagClass: 'bg-blue-50 text-blue-800 border-blue-200',
+                questions: QUIZ_QUESTIONS.slice(5, 10),
+                offset: 5,
+              },
+              {
+                tier: 'ADVANCED',
+                title: 'PART 3. 상급 AI 활용 능력 평가 (문항 11 ~ 15)',
+                subtitle: '대량 비정형 데이터 구조화, 엔터프라이즈 영업기밀 보호, 지식재산권 거버넌스 및 Human-in-the-loop 설계를 평가합니다.',
+                headerClass: 'bg-purple-950 text-white border-purple-900',
+                badgeClass: 'bg-purple-600 text-white',
+                tagClass: 'bg-purple-50 text-purple-800 border-purple-200',
+                questions: QUIZ_QUESTIONS.slice(10, 15),
+                offset: 10,
+              },
+            ].map((section) => (
+              <div key={section.tier} className="space-y-4">
+                <div className={`p-4 rounded-2xl border ${section.headerClass} flex flex-col sm:flex-row sm:items-center justify-between gap-2 shadow-xs`}>
+                  <div>
+                    <h3 className="text-sm sm:text-base font-extrabold tracking-tight">{section.title}</h3>
+                    <p className="text-[11px] opacity-85 mt-0.5">{section.subtitle}</p>
+                  </div>
+                  <span className="text-xs font-mono font-bold px-3 py-1 rounded-full bg-white/15 self-start sm:self-auto shrink-0">
+                    5문항 · 5지선다형
+                  </span>
+                </div>
+
+                {section.questions.map((q, localIdx) => {
+                  const idx = section.offset + localIdx;
+                  const currentChoice = quizAnswers[q.id];
+
+                  return (
+                    <div
+                      key={q.id}
+                      className={`p-5 rounded-2xl border transition-all space-y-3.5 ${
+                        currentChoice
+                          ? 'bg-white border-blue-200 shadow-xs'
+                          : 'bg-slate-50/70 border-slate-200'
+                      }`}
+                    >
+                      {/* Category & Question Header */}
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-2.5">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className={`px-2.5 py-0.5 rounded-lg text-xs font-bold font-mono shadow-2xs ${section.badgeClass}`}>
+                            문항 {idx + 1}
+                          </span>
+                          <span className={`text-[11px] font-bold border px-2 py-0.5 rounded-md ${section.tagClass}`}>
+                            {q.difficultyLabel || section.title.split('.')[1]}
+                          </span>
+                          <span className="text-[11px] font-semibold text-slate-700 bg-slate-100 border border-slate-200 px-2 py-0.5 rounded-md">
+                            {q.categoryLabel}
+                          </span>
+                        </div>
+                        <span className="text-[10px] font-mono text-slate-400">
+                          ID: {q.id} (5지선다형)
+                        </span>
+                      </div>
+
+                      {/* Real-world Scenario Box */}
+                      <div className="p-3.5 rounded-xl bg-slate-50/90 border border-slate-200/80 text-xs text-slate-700 leading-relaxed flex items-start gap-2.5">
+                        <Lightbulb className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
+                        <div>
+                          <strong className="text-slate-900 block mb-0.5 font-semibold">
+                            [실무 상황 시나리오]
+                          </strong>
+                          <span className="text-slate-600">{q.scenario}</span>
+                        </div>
+                      </div>
+
+                      {/* Question Title */}
+                      <p className="text-sm font-bold text-slate-900 leading-snug pt-1">
+                        {q.question}
+                      </p>
+
+                      {/* 5 Multiple Choice Options */}
+                      <div className="grid grid-cols-1 gap-2.5 pt-1">
+                        {q.options.map((opt) => {
+                          const isSelected = currentChoice === opt.number;
+
+                          return (
+                            <button
+                              key={opt.number}
+                              type="button"
+                              onClick={() => handleQuizChoice(q.id, opt.number)}
+                              className={`text-left p-3.5 rounded-xl text-xs font-medium border transition-all flex items-start justify-between gap-3 cursor-pointer group ${
+                                isSelected
+                                  ? 'bg-blue-50/90 border-blue-600 text-blue-950 font-semibold shadow-xs ring-1 ring-blue-500/20'
+                                  : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-100/70 hover:border-slate-300'
+                              }`}
+                            >
+                              <div className="flex items-start gap-2.5 flex-1 min-w-0">
+                                <span
+                                  className={`w-5 h-5 rounded-full flex items-center justify-center font-mono text-xs font-bold shrink-0 mt-0.5 transition-colors ${
+                                    isSelected
+                                      ? 'bg-blue-600 text-white'
+                                      : 'bg-slate-100 text-slate-600 group-hover:bg-slate-200'
+                                  }`}
+                                >
+                                  {opt.number}
+                                </span>
+                                <span className="leading-relaxed flex-1">{opt.text}</span>
+                              </div>
+
+                              <span
+                                className={`w-4 h-4 rounded-full border flex items-center justify-center shrink-0 mt-0.5 transition-colors ${
+                                  isSelected
+                                    ? 'bg-blue-600 border-blue-600 text-white'
+                                    : 'border-slate-300 bg-white'
+                                }`}
+                              >
+                                {isSelected && <Check className="w-2.5 h-2.5 stroke-[3]" />}
+                              </span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Step 6: Final Review & Confirmation */}
       {currentStep === 6 && (
         <div className="bg-white border border-slate-200 rounded-2xl p-6 sm:p-8 shadow-sm space-y-6">
@@ -1773,10 +1855,10 @@ export const SurveyView: React.FC<SurveyViewProps> = ({
               <div className="font-semibold text-slate-900">문항 응답 완료 현황 (총 74문항)</div>
               <div className="space-y-1 text-slate-600">
                 <div>1. AI 사용 현황: <span className="text-emerald-700 font-semibold">10문항 (U01~U10) 완료</span></div>
-                <div>2. 실전 AI 문제 풀이: <span className="text-blue-700 font-semibold">15문항 풀이 완료 (즉시 해설 제공)</span></div>
-                <div>3. AI 실무 역량: <span className="text-emerald-700 font-semibold">20문항 전원 완료</span></div>
-                <div>4. AI 업무 성향: <span className="text-emerald-700 font-semibold">24문항 전원 완료</span></div>
-                <div>5. 자동화 제안: {hasNoTask ? '제안 없음' : <span className="text-blue-700 font-semibold">과제 1건 등록</span>}</div>
+                <div>2. AI 실무 역량: <span className="text-emerald-700 font-semibold">20문항 전원 완료</span></div>
+                <div>3. AI 업무 성향: <span className="text-emerald-700 font-semibold">24문항 전원 완료</span></div>
+                <div>4. 자동화 제안: {hasNoTask ? '제안 없음' : <span className="text-blue-700 font-semibold">과제 1건 등록</span>}</div>
+                <div>5. 개인 AI 활용 능력 평가: <span className="text-blue-700 font-semibold">초급 5 · 중급 5 · 상급 5 (총 15문항 완료)</span></div>
               </div>
             </div>
           </div>

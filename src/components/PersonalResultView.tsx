@@ -583,17 +583,17 @@ export const PersonalResultView: React.FC<PersonalResultViewProps> = ({
       <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 shadow-sm space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-5">
           <div className="space-y-1">
-            <div className="flex items-center gap-2">
-              <span className="w-7 h-7 rounded-xl bg-blue-600 text-white flex items-center justify-center text-xs font-bold shadow-2xs">
-                <GraduationCap className="w-4 h-4" />
-              </span>
-              <h3 className="text-lg font-bold text-slate-900">
-                실전 AI 문제 풀이 15문항 정답 & 상세 해설 (오답노트)
-              </h3>
-            </div>
-            <p className="text-xs text-slate-500">
-              실무 시나리오 기반 15개 문제의 정답과 상세 해설, 다비치 현장 실무 적용 팁을 확인하실 수 있습니다.
-            </p>
+              <div className="flex items-center gap-2">
+                <span className="w-7 h-7 rounded-xl bg-blue-600 text-white flex items-center justify-center text-xs font-bold shadow-2xs">
+                  <GraduationCap className="w-4 h-4" />
+                </span>
+                <h3 className="text-lg font-bold text-slate-900">
+                  개인 AI 활용 능력 최종 평가 (초급 5 · 중급 5 · 상급 5) 결과 및 오답노트
+                </h3>
+              </div>
+              <p className="text-xs text-slate-500">
+                초급(기초 활용 5문항) · 중급(실무 응용 5문항) · 상급(심화 거버넌스 5문항) 총 15문항에 대한 단계별 평가 결과 및 해설입니다.
+              </p>
           </div>
 
           <div className="flex items-center gap-2 self-start sm:self-auto shrink-0">
@@ -646,6 +646,48 @@ export const PersonalResultView: React.FC<PersonalResultViewProps> = ({
           </div>
         </div>
 
+        {/* 3-Tier Evaluation Score Breakdown (초급 5 / 중급 5 / 상급 5) */}
+        <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 text-xs">
+          <div className="p-4 rounded-2xl bg-emerald-50/70 border border-emerald-200 space-y-1">
+            <div className="text-[11px] font-bold text-emerald-700">초급 문제 (기초 활용)</div>
+            <div className="text-xl font-extrabold font-mono text-emerald-950">
+              {QUIZ_QUESTIONS.slice(0, 5).filter((q) => answers.quiz?.[q.id] === q.correctAnswer).length} / 5 정답
+            </div>
+            <div className="text-[11px] text-emerald-700">프롬프트 기초·보안·팩트체크</div>
+          </div>
+
+          <div className="p-4 rounded-2xl bg-blue-50/70 border border-blue-200 space-y-1">
+            <div className="text-[11px] font-bold text-blue-700">중급 문제 (실무 응용)</div>
+            <div className="text-xl font-extrabold font-mono text-blue-950">
+              {QUIZ_QUESTIONS.slice(5, 10).filter((q) => answers.quiz?.[q.id] === q.correctAnswer).length} / 5 정답
+            </div>
+            <div className="text-[11px] text-blue-700">Few-Shot·단계별추론·멀티모달</div>
+          </div>
+
+          <div className="p-4 rounded-2xl bg-purple-50/70 border border-purple-200 space-y-1">
+            <div className="text-[11px] font-bold text-purple-700">상급 문제 (심화 거버넌스)</div>
+            <div className="text-xl font-extrabold font-mono text-purple-950">
+              {QUIZ_QUESTIONS.slice(10, 15).filter((q) => answers.quiz?.[q.id] === q.correctAnswer).length} / 5 정답
+            </div>
+            <div className="text-[11px] text-purple-700">데이터정제·기밀보안·인간개입</div>
+          </div>
+
+          <div className="p-4 rounded-2xl bg-slate-900 text-white space-y-1">
+            <div className="text-[11px] font-bold text-blue-300">종합 AI 활용 능력 등급</div>
+            <div className="text-base font-extrabold text-amber-300">
+              {scores.quizLevelLabel ||
+                ((scores.quizCorrectCount ?? 0) >= 13
+                  ? '상급 마스터 (Advanced)'
+                  : (scores.quizCorrectCount ?? 0) >= 9
+                  ? '중급 실무자 (Intermediate)'
+                  : '초급 활용자 (Basic)')}
+            </div>
+            <div className="text-[11px] text-slate-300">
+              총 {scores.quizCorrectCount ?? 0} / 15문항 ({scores.quizScore ?? 0}점)
+            </div>
+          </div>
+        </div>
+
         {/* Quiz Items List */}
         {isQuizOpen && (
           <div className="space-y-5 pt-1">
@@ -668,11 +710,22 @@ export const PersonalResultView: React.FC<PersonalResultViewProps> = ({
                 >
                   {/* Item Header */}
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-200/60 pb-3">
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
                       <span className="px-2.5 py-0.5 rounded-lg bg-slate-900 text-white text-xs font-bold font-mono">
                         문항 {idx + 1}
                       </span>
-                      <span className="text-[11px] font-semibold text-blue-800 bg-blue-50 border border-blue-200 px-2 py-0.5 rounded-md">
+                      <span
+                        className={`text-[11px] font-bold border px-2 py-0.5 rounded-md ${
+                          q.difficulty === 'BASIC'
+                            ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                            : q.difficulty === 'INTERMEDIATE'
+                            ? 'bg-blue-50 text-blue-800 border-blue-200'
+                            : 'bg-purple-50 text-purple-800 border-purple-200'
+                        }`}
+                      >
+                        {q.difficultyLabel || (idx < 5 ? '초급' : idx < 10 ? '중급' : '상급')}
+                      </span>
+                      <span className="text-[11px] font-semibold text-slate-700 bg-slate-100 border border-slate-200 px-2 py-0.5 rounded-md">
                         {q.categoryLabel}
                       </span>
                     </div>

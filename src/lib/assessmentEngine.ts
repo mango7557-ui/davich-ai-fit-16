@@ -56,29 +56,54 @@ export function calculateQuizScore(quizAnswers: Record<string, number> = {}): {
   quizScore: number;
   quizCorrectCount: number;
   quizTotalCount: number;
+  quizBasicCorrect: number;
+  quizIntermediateCorrect: number;
+  quizAdvancedCorrect: number;
+  quizLevelLabel: string;
   quizDetails: { questionId: string; selectedAnswer: number; isCorrect: boolean }[];
 } {
   const totalCount = QUIZ_QUESTIONS.length; // 15
   let correctCount = 0;
+  let basicCorrect = 0;
+  let intermediateCorrect = 0;
+  let advancedCorrect = 0;
   const details: { questionId: string; selectedAnswer: number; isCorrect: boolean }[] = [];
 
-  for (const q of QUIZ_QUESTIONS) {
+  QUIZ_QUESTIONS.forEach((q, idx) => {
     const userChoice = quizAnswers[q.id];
     const isCorrect = userChoice === q.correctAnswer;
-    if (isCorrect) correctCount++;
+    const diff = q.difficulty || (idx < 5 ? 'BASIC' : idx < 10 ? 'INTERMEDIATE' : 'ADVANCED');
+    if (isCorrect) {
+      correctCount++;
+      if (diff === 'BASIC') basicCorrect++;
+      else if (diff === 'INTERMEDIATE') intermediateCorrect++;
+      else advancedCorrect++;
+    }
     details.push({
       questionId: q.id,
       selectedAnswer: userChoice || 0,
       isCorrect,
     });
-  }
+  });
 
   const quizScore = totalCount > 0 ? Math.round((correctCount / totalCount) * 100) : 0;
+  const quizLevelLabel =
+    correctCount >= 13
+      ? '상급 마스터 (Advanced)'
+      : correctCount >= 9
+      ? '중급 실무자 (Intermediate)'
+      : correctCount >= 5
+      ? '초급 활용자 (Basic)'
+      : '기초 입문자 (Starter)';
 
   return {
     quizScore,
     quizCorrectCount: correctCount,
     quizTotalCount: totalCount,
+    quizBasicCorrect: basicCorrect,
+    quizIntermediateCorrect: intermediateCorrect,
+    quizAdvancedCorrect: advancedCorrect,
+    quizLevelLabel,
     quizDetails: details,
   };
 }
@@ -157,6 +182,10 @@ export function evaluateAssessmentScores(
     quizScore: quizResult.quizScore,
     quizCorrectCount: quizResult.quizCorrectCount,
     quizTotalCount: quizResult.quizTotalCount,
+    quizBasicCorrect: quizResult.quizBasicCorrect,
+    quizIntermediateCorrect: quizResult.quizIntermediateCorrect,
+    quizAdvancedCorrect: quizResult.quizAdvancedCorrect,
+    quizLevelLabel: quizResult.quizLevelLabel,
     quizDetails: quizResult.quizDetails,
     usageFrequency,
     estimatedHoursSavedDaily,
