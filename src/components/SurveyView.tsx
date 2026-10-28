@@ -378,67 +378,6 @@ export const SurveyView: React.FC<SurveyViewProps> = ({
     setCurrentStep((prev) => Math.max(0, prev - 1));
   };
 
-  // Quick fill all remaining answers for testing convenience
-  const handleQuickFill = () => {
-    // 8 Usage answers
-    setUsageAnswers({
-      U01: 'WEEKLY_3_4',
-      U02: ['CHATGPT', 'GEMINI', 'COPILOT'],
-      U03: ['DOC_WRITING', 'DATA_ANALYSIS', 'CUSTOMER_SERVICE', 'CONTENT_CREATION'],
-      U04: 'COMPANY_PAID',
-      U05: 'PC_WEB',
-      U06: 'LACK_SKILL',
-      U07: '31_60_MIN',
-      U08: 'PROMPT_WORKSHOP',
-      U09: 'CONTEXT_ROLE',
-      U10: 'THOROUGH_EDIT',
-    });
-
-    // 15 Practical Quiz answers (Q01~Q15, 14 correct and 1 realistic mistake)
-    const quizzes: Record<string, number> = {};
-    QUIZ_QUESTIONS.forEach((q, idx) => {
-      // Q13 is wrong choice for realism
-      quizzes[q.id] = idx === 12 ? (q.correctAnswer === 1 ? 2 : 1) : q.correctAnswer;
-    });
-    setQuizAnswers(quizzes);
-
-    // 20 Capability Likert answers (C01~C20)
-    const caps: Record<string, number> = {};
-    CAPABILITY_QUESTIONS.forEach((q, idx) => {
-      caps[q.id] = (idx % 3) + 3; // 3..5
-    });
-    setCapabilityAnswers(caps);
-
-    // 24 Preference answers (T01~T24)
-    const prefs: Record<string, 1 | 2> = {};
-    PREFERENCE_QUESTIONS.forEach((q, idx) => {
-      prefs[q.id] = (idx % 2 === 0 ? 1 : 2) as 1 | 2;
-    });
-    setPreferenceAnswers(prefs);
-
-    if (!taskName) {
-      setTaskName('고객 맞춤 누진다초점 안경 수령 안내 및 피팅 피드백 자동 취합');
-      setWeeklyCount(4);
-      setTimePerTaskMinutes(60);
-      setHeadcount(3);
-      setDesiredImprovement('수작업 작성 시간 80% 단축 및 고객 재방문 만족도 제고');
-      setSecurityRisk('NO');
-      setSupportNeeded('카카오 알림톡 연계 및 사내 표준 프롬프트 템플릿 지원');
-    }
-
-    if (!name) setName('김다비치');
-    if (!password) {
-      setPassword('1234');
-      setPasswordConfirm('1234');
-    }
-    if (!employeeNumber) setEmployeeNumber('DV-2026-01');
-    if (!position) setPosition('책임안경사');
-    if (!jobFunction) setJobFunction('전문 시력 검안 및 고객 맞춤 처방');
-    setConsentPrivacy(true);
-    setConsentNoSensitive(true);
-    setErrorMsg(null);
-  };
-
   // Final Submit
   const handleSubmit = () => {
     const targetCompany =
@@ -1900,15 +1839,6 @@ export const SurveyView: React.FC<SurveyViewProps> = ({
         </div>
 
         <div className="flex items-center gap-2">
-          {/* Quick-fill helper for test reviewers */}
-          <button
-            type="button"
-            onClick={handleQuickFill}
-            className="text-[11px] text-slate-400 hover:text-blue-600 underline px-2 py-1 cursor-pointer"
-          >
-            테스트용 빠른 채우기
-          </button>
-
           {currentStep < 6 ? (
             <button
               type="button"
