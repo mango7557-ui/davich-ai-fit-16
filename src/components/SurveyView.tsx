@@ -1156,6 +1156,12 @@ export const SurveyView: React.FC<SurveyViewProps> = ({
           <div className="space-y-6">
             {USAGE_QUESTIONS.map((q) => {
               const currentVal = usageAnswers[q.id];
+              const customKey = `${q.id}_CUSTOM`;
+              const customTextVal = (usageAnswers[customKey] as string) || '';
+              const isCustomSelected =
+                q.type === 'single'
+                  ? currentVal === 'OTHER_CUSTOM'
+                  : Array.isArray(currentVal) && currentVal.includes('OTHER_CUSTOM');
 
               return (
                 <div key={q.id} className="p-4 rounded-xl border border-slate-200/80 bg-slate-50/50 space-y-3">
@@ -1184,7 +1190,7 @@ export const SurveyView: React.FC<SurveyViewProps> = ({
                             if (q.type === 'single') handleUsageSingle(q.id, opt.value);
                             else handleUsageMultiple(q.id, opt.value);
                           }}
-                          className={`text-left p-3 rounded-xl text-xs font-medium border transition-all flex items-center justify-between gap-2 ${
+                          className={`text-left p-3 rounded-xl text-xs font-medium border transition-all flex items-center justify-between gap-2 cursor-pointer ${
                             isSelected
                               ? 'bg-blue-50 border-blue-500 text-blue-900 shadow-2xs font-semibold'
                               : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-100/60'
@@ -1203,10 +1209,108 @@ export const SurveyView: React.FC<SurveyViewProps> = ({
                         </button>
                       );
                     })}
+
+                    {/* 기타 (직접 입력) 옵션 */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (q.type === 'single') handleUsageSingle(q.id, 'OTHER_CUSTOM');
+                        else handleUsageMultiple(q.id, 'OTHER_CUSTOM');
+                      }}
+                      className={`text-left p-3 rounded-xl text-xs font-medium border transition-all flex items-center justify-between gap-2 cursor-pointer ${
+                        isCustomSelected
+                          ? 'bg-indigo-50 border-indigo-500 text-indigo-950 shadow-2xs font-semibold'
+                          : 'bg-white border-dashed border-slate-300 text-slate-600 hover:bg-slate-100/60'
+                      }`}
+                    >
+                      <span>기타 (직접 입력)</span>
+                      <span
+                        className={`w-4 h-4 rounded-full border flex items-center justify-center shrink-0 ${
+                          isCustomSelected
+                            ? 'bg-indigo-600 border-indigo-600 text-white'
+                            : 'border-slate-300'
+                        }`}
+                      >
+                        {isCustomSelected && <span className="w-1.5 h-1.5 rounded-full bg-white" />}
+                      </span>
+                    </button>
                   </div>
+
+                  {/* 문항별 직접 입력 필드 */}
+                  {isCustomSelected && (
+                    <div className="pl-8 pt-1 animate-in fade-in">
+                      <input
+                        type="text"
+                        placeholder={`${q.id} 문항에 대한 기타 내용을 직접 입력해 주세요...`}
+                        value={customTextVal}
+                        onChange={(e) =>
+                          setUsageAnswers((prev) => ({
+                            ...prev,
+                            [customKey]: e.target.value,
+                          }))
+                        }
+                        className="w-full px-3.5 py-2.5 text-xs bg-white border border-indigo-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 font-medium"
+                      />
+                    </div>
+                  )}
                 </div>
               );
             })}
+
+            {/* AI 사용 현황 직접 입력 전용 섹션 */}
+            <div className="p-5 rounded-2xl border-2 border-blue-200/80 bg-blue-50/40 space-y-4">
+              <div className="flex items-start gap-2.5">
+                <div className="w-7 h-7 rounded-lg bg-blue-600 text-white flex items-center justify-center text-xs font-bold shrink-0 mt-0.5">
+                  ✎
+                </div>
+                <div className="space-y-0.5">
+                  <h4 className="text-sm font-bold text-slate-900">
+                    AI 사용 현황 및 활용 사례 직접 입력 섹션 (자유 기술)
+                  </h4>
+                  <p className="text-[11px] text-slate-500">
+                    위 객관식 문항 외에 본인이 실제로 활용 중인 AI 도구, 업무 적용 방식, 또는 현업 도입 시 건의사항을 자유롭게 입력해 주세요.
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 gap-3.5 text-xs">
+                <div>
+                  <label className="block text-slate-700 font-semibold mb-1.5">
+                    1) 현재 주로 사용하는 AI 도구 및 나만의 실무 활용 방식 (직접 입력)
+                  </label>
+                  <textarea
+                    rows={2}
+                    placeholder="예: Perplexity로 안경학 최신 트렌드 검색, ChatGPT로 고객 클레임 안내 문자 초안 작성, 엑셀 수식 자동 생성 등"
+                    value={(usageAnswers['U_CUSTOM_USAGE'] as string) || ''}
+                    onChange={(e) =>
+                      setUsageAnswers((prev) => ({
+                        ...prev,
+                        U_CUSTOM_USAGE: e.target.value,
+                      }))
+                    }
+                    className="w-full px-3.5 py-2.5 text-xs bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 leading-relaxed"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-slate-700 font-semibold mb-1.5">
+                    2) AI 활용 시 겪는 애로사항 또는 회사에 바라는 지원 의견 (직접 입력)
+                  </label>
+                  <textarea
+                    rows={2}
+                    placeholder="예: 매장 실무에 바로 쓸 수 있는 다비치 전용 프롬프트 예시집이 있으면 좋겠습니다 / 유료 계정 지원 희망 등"
+                    value={(usageAnswers['U_CUSTOM_OPINION'] as string) || ''}
+                    onChange={(e) =>
+                      setUsageAnswers((prev) => ({
+                        ...prev,
+                        U_CUSTOM_OPINION: e.target.value,
+                      }))
+                    }
+                    className="w-full px-3.5 py-2.5 text-xs bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 leading-relaxed"
+                  />
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       )}

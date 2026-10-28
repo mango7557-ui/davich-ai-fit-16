@@ -544,6 +544,41 @@ export const PersonalResultView: React.FC<PersonalResultViewProps> = ({
         </div>
       </div>
 
+      {/* 응답자 직접 입력 AI 사용 현황 및 의견 (작성 시 표시) */}
+      {(answers.usage?.['U_CUSTOM_USAGE'] ||
+        answers.usage?.['U_CUSTOM_OPINION'] ||
+        Object.keys(answers.usage || {}).some((k) => k.endsWith('_CUSTOM') && answers.usage[k])) && (
+        <div className="bg-white border border-slate-200 rounded-2xl p-6 sm:p-8 shadow-sm space-y-4">
+          <div className="space-y-1">
+            <h3 className="text-base font-bold text-slate-900">
+              AI 사용 현황 및 활용 의견 (직접 입력 내역)
+            </h3>
+            <p className="text-xs text-slate-500">
+              응답자가 사용 현황 섹션에서 직접 작성한 AI 활용 사례 및 지원 희망 의견입니다.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 text-xs">
+            {answers.usage?.['U_CUSTOM_USAGE'] && (
+              <div className="p-4 rounded-xl bg-blue-50/50 border border-blue-200/80 space-y-1">
+                <div className="font-bold text-blue-950">현재 주로 사용하는 AI 도구 및 활용 방식</div>
+                <p className="text-slate-700 leading-relaxed whitespace-pre-wrap">
+                  {String(answers.usage['U_CUSTOM_USAGE'])}
+                </p>
+              </div>
+            )}
+            {answers.usage?.['U_CUSTOM_OPINION'] && (
+              <div className="p-4 rounded-xl bg-indigo-50/50 border border-indigo-200/80 space-y-1">
+                <div className="font-bold text-indigo-950">AI 활용 애로사항 및 지원 희망 의견</div>
+                <p className="text-slate-700 leading-relaxed whitespace-pre-wrap">
+                  {String(answers.usage['U_CUSTOM_OPINION'])}
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* 실전 AI 문제 풀이 15문항 정답 & 상세 오답노트 (해설) */}
       <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 shadow-sm space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-5">
