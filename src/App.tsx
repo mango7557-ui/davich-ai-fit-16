@@ -17,6 +17,7 @@ import {
   saveRespondentSession,
   isSubmissionForCompany,
   syncFromCloud,
+  recoverPreviousSubmissions,
 } from './lib/storage';
 import { AssessmentSubmission, AdminUser, Company } from './types/davich';
 import { X, Lock } from 'lucide-react';
@@ -87,8 +88,12 @@ export default function App() {
   });
   const [modalSubmission, setModalSubmission] = useState<AssessmentSubmission | null>(null);
 
-  // Subscribe to storage changes
+  // Subscribe to storage changes and auto-recover any previous local submissions to cloud
   useEffect(() => {
+    recoverPreviousSubmissions();
+    syncFromCloud().then((latest) => {
+      setStore({ ...latest });
+    });
     const unsubscribe = subscribeStorage((newState) => {
       setStore({ ...newState });
     });

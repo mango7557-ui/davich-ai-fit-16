@@ -52,6 +52,9 @@ import {
   getStoredState,
   isSubmissionForCompany,
   syncFromCloud,
+  recoverPreviousSubmissions,
+  reassignSubmissionCompany,
+  loadSampleDataset,
 } from '../lib/storage';
 import { KakaoShareModal } from './KakaoShareModal';
 
@@ -682,15 +685,20 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               <button
                 type="button"
                 onClick={async () => {
+                  const rec = recoverPreviousSubmissions(currentCompany?.id);
                   await syncFromCloud();
                   refreshRegisteredStaff();
-                  notify('실시간 클라우드 설문 응답 데이터가 최신 상태로 동기화되었습니다.');
+                  notify(
+                    rec.recoveredCount > 0
+                      ? `이전 참여자 ${rec.recoveredCount}건이 복구 및 동기화되었습니다.`
+                      : '클라우드 및 로컬의 모든 참여자 데이터가 최신 상태로 동기화되었습니다.'
+                  );
                 }}
-                className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-colors"
-                title="스마트폰(카카오톡) 및 다른 기기에서 제출된 설문 응답 즉시 동기화"
+                className="px-3 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 rounded-xl text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-colors"
+                title="이전에 제출된 설문 응답 스캔 및 현재 기업으로 복구·동기화"
               >
-                <RotateCcw className="w-3.5 h-3.5 text-blue-600" />
-                <span>실시간 응답 동기화</span>
+                <RotateCcw className="w-3.5 h-3.5 text-amber-600" />
+                <span>이전 참여자 스캔·복구</span>
               </button>
 
               {currentCompany && (
@@ -727,6 +735,53 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             </div>
           </div>
 
+          {/* Cross-Company / Misassigned Previous Submissions Recovery Box */}
+          {currentCompany &&
+            submissions.filter((s) => !isSubmissionForCompany(s, currentCompany) && s.companyId !== targetCompanyId).length > 0 && (
+              <div className="p-4 rounded-2xl bg-amber-50/90 border border-amber-200 text-xs space-y-2.5">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <div className="font-bold text-amber-950 flex items-center gap-1.5">
+                    <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
+                    <span>
+                      다른 기업/지점으로 분류되어 있는 이전 설문 참여자 내역 (
+                      {
+                        submissions.filter(
+                          (s) => !isSubmissionForCompany(s, currentCompany) && s.companyId !== targetCompanyId
+                        ).length
+                      }
+                      명) — 클릭 시 [{currentCompany.name}] 소속으로 즉시 복구됩니다
+                    </span>
+                  </div>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {submissions
+                    .filter((s) => !isSubmissionForCompany(s, currentCompany) && s.companyId !== targetCompanyId)
+                    .map((otherSub) => (
+                      <div
+                        key={otherSub.id}
+                        className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white border border-amber-300 shadow-2xs"
+                      >
+                        <span className="font-bold text-slate-900">{otherSub.respondent.name}</span>
+                        <span className="text-[11px] text-slate-500">
+                          ({otherSub.respondent.department} · {otherSub.respondent.position} / 현재:{' '}
+                          {otherSub.respondent.companyName})
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            reassignSubmissionCompany(otherSub.id, currentCompany.id);
+                            notify(`'${otherSub.respondent.name}' 님의 설문 내역을 [${currentCompany.name}] 소속으로 복구했습니다.`);
+                          }}
+                          className="px-2 py-0.5 rounded bg-blue-600 hover:bg-blue-500 text-white font-bold text-[11px] cursor-pointer"
+                        >
+                          [{currentCompany.name}]으로 복구
+                        </button>
+                      </div>
+                    ))}
+                </div>
+              </div>
+            )}
+
           {/* Combined Staff Table */}
           {filteredSubmissions.length === 0 && pendingStaff.length === 0 ? (
             <div className="py-16 text-center text-xs text-slate-500 space-y-3 bg-slate-50/60 rounded-2xl border border-dashed border-slate-200">
@@ -734,10 +789,39 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               <div className="space-y-1">
                 <p className="font-semibold text-slate-800">등록된 직원 또는 진단 참여 내역이 없습니다.</p>
                 <p className="text-slate-400">
-                  신규 직원을 사전 등록하거나, 설문 참여 링크를 공유하여 참여를 독려해 보세요.
+                  이전에 다른 창/휴대폰에서 제출하셨다면 그 창을 한 번 새로고침하시거나 아래 [이전 참여자 스캔·복구] 버튼을 눌러보세요.
                 </p>
               </div>
-              <div className="flex items-center justify-center gap-2 pt-2">
+              <div className="flex flex-wrap items-center justify-center gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={async () => {
+                    const rec = recoverPreviousSubmissions(currentCompany?.id);
+                    await syncFromCloud();
+                    refreshRegisteredStaff();
+                    notify(
+                      rec.recoveredCount > 0
+                        ? `이전 참여자 ${rec.recoveredCount}건이 복구되었습니다.`
+                        : '클라우드 및 로컬 스캔을 완료했습니다.'
+                    );
+                  }}
+                  className="px-3.5 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-xs font-bold shadow-2xs cursor-pointer flex items-center gap-1.5"
+                >
+                  <RotateCcw className="w-3.5 h-3.5" />
+                  <span>이전 참여자 스캔·복구</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    loadSampleDataset();
+                    refreshRegisteredStaff();
+                    notify('기본 샘플 참여자 데이터(다비치안경 본사 등)가 복원되었습니다.');
+                  }}
+                  className="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-xl text-xs font-bold shadow-2xs cursor-pointer flex items-center gap-1.5"
+                >
+                  <Sparkles className="w-3.5 h-3.5" />
+                  <span>기본 샘플 참여자 복원</span>
+                </button>
                 {currentCompany && (
                   <button
                     type="button"
@@ -752,16 +836,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   >
                     <UserCheck className="w-3.5 h-3.5" />
                     <span>설문 참여 시작</span>
-                  </button>
-                )}
-                {currentCompany && (
-                  <button
-                    type="button"
-                    onClick={handleCopyInviteMessage}
-                    className="px-3.5 py-2 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 rounded-xl text-xs font-semibold cursor-pointer flex items-center gap-1.5"
-                  >
-                    <Share2 className="w-3.5 h-3.5" />
-                    <span>카톡 설문 링크 복사</span>
                   </button>
                 )}
               </div>

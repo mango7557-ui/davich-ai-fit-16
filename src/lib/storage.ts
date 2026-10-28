@@ -1133,6 +1133,121 @@ export function saveSubmission(submission: AssessmentSubmission): AssessmentSubm
   return finalSubmission;
 }
 
+export function reassignSubmissionCompany(submissionId: string, newCompanyId: string): boolean {
+  const state = getStoredState();
+  const targetComp = state.companies.find((c) => c.id === newCompanyId);
+  if (!targetComp) return false;
+
+  const subIdx = state.submissions.findIndex((s) => s.id === submissionId);
+  if (subIdx === -1) return false;
+
+  const updatedSub: AssessmentSubmission = {
+    ...state.submissions[subIdx],
+    companyId: targetComp.id,
+    respondent: {
+      ...state.submissions[subIdx].respondent,
+      companyId: targetComp.id,
+      companyName: targetComp.name,
+    },
+  };
+
+  const nextSubs = [...state.submissions];
+  nextSubs[subIdx] = updatedSub;
+
+  const nextTasks = state.automationTasks.map((t) =>
+    t.respondentId === submissionId
+      ? { ...t, companyId: targetComp.id, companyName: targetComp.name }
+      : t
+  );
+  const nextAssigns = state.assignments.map((a) =>
+    a.respondentId === submissionId ? { ...a, companyId: targetComp.id } : a
+  );
+
+  saveState({
+    ...state,
+    submissions: nextSubs,
+    automationTasks: nextTasks,
+    assignments: nextAssigns,
+  });
+  publishCloudEvent({ type: 'SUBMISSION_UPSERT', submission: updatedSub, ts: Date.now() });
+  return true;
+}
+
+export function recoverPreviousSubmissions(targetCompanyId?: string): {
+  recoveredCount: number;
+  totalSubmissions: number;
+} {
+  if (typeof window === 'undefined') return { recoveredCount: 0, totalSubmissions: 0 };
+  const state = getStoredState();
+  let updatedSubmissions = [...state.submissions];
+  let recoveredCount = 0;
+
+  const hqComp =
+    (targetCompanyId && state.companies.find((c) => c.id === targetCompanyId)) ||
+    state.companies.find((c) => c.code === 'davich-hq' || c.id === 'comp_davich_hq') ||
+    state.companies[0];
+
+  // 1. Check respondent session for any submission record that was saved in session but missing/misassigned
+  const respSession = getSavedRespondentSession();
+  if (respSession && respSession.name) {
+    const existingIdx = updatedSubmissions.findIndex(
+      (s) =>
+        s.id === respSession.submissionId ||
+        s.respondent.name.trim().toLowerCase() === respSession.name.trim().toLowerCase()
+    );
+    if (existingIdx !== -1 && hqComp && targetCompanyId) {
+      const existing = updatedSubmissions[existingIdx];
+      if (existing.companyId !== hqComp.id) {
+        updatedSubmissions[existingIdx] = {
+          ...existing,
+          companyId: hqComp.id,
+          respondent: {
+            ...existing.respondent,
+            companyId: hqComp.id,
+            companyName: hqComp.name,
+          },
+        };
+        recoveredCount++;
+      }
+    }
+  }
+
+  // 2. Re-align any submission whose companyId doesn't match a known company or was saved under default store by mistake
+  const validCompanyIds = new Set(state.companies.map((c) => c.id));
+  updatedSubmissions = updatedSubmissions.map((s) => {
+    if (!validCompanyIds.has(s.companyId) && hqComp) {
+      recoveredCount++;
+      return {
+        ...s,
+        companyId: hqComp.id,
+        respondent: {
+          ...s.respondent,
+          companyId: hqComp.id,
+          companyName: hqComp.name,
+        },
+      };
+    }
+    return s;
+  });
+
+  if (recoveredCount > 0) {
+    saveState({
+      ...state,
+      submissions: updatedSubmissions,
+    });
+  }
+
+  // Force push all local submissions to cloud so other tabs/devices receive them
+  for (const sub of updatedSubmissions) {
+    publishCloudEvent({ type: 'SUBMISSION_UPSERT', submission: sub, ts: Date.now() });
+  }
+
+  return {
+    recoveredCount,
+    totalSubmissions: updatedSubmissions.length,
+  };
+}
+
 export function deleteSubmission(id: string): boolean {
   const state = getStoredState();
   const updatedSubmissions = state.submissions.filter((s) => s.id !== id);
@@ -1291,17 +1406,17 @@ export function loadSampleDataset() {
   const sampleAssignments: TrainingAssignment[] = [];
 
   const rawStaffList = [
-    { name: '이수연', compId: 'comp_sample_hq', compName: '다비치안경 본사', dept: '마케팅전략팀', pos: '과장', num: 'HQ-1024', pref: 'ECIP', cap: 78, safe: 85 },
-    { name: '정동진', compId: 'comp_sample_hq', compName: '다비치안경 본사', dept: '경영지원팀', pos: '대리', num: 'HQ-1055', pref: 'RAVP', cap: 64, safe: 90 },
-    { name: '윤지혜', compId: 'comp_sample_hq', compName: '다비치안경 본사', dept: 'IT혁신팀', pos: '팀장', num: 'HQ-1008', pref: 'EAVP', cap: 92, safe: 95 },
-    { name: '한소라', compId: 'comp_sample_hq', compName: '다비치안경 본사', dept: '교육개발팀', pos: '주임', num: 'HQ-1072', pref: 'RCVP', cap: 58, safe: 75 },
-    { name: '김민준', compId: 'comp_sample_gangnam', compName: '다비치안경 대치본점 (직영점)', dept: '안경사 1팀 (시력검사)', pos: '수석안경사', num: 'ST-2001', pref: 'RAVO', cap: 72, safe: 88 },
-    { name: '오세린', compId: 'comp_sample_gangnam', compName: '다비치안경 대치본점 (직영점)', dept: '안경사 2팀 (콘택트/가공)', pos: '안경사', num: 'ST-2014', pref: 'RCVO', cap: 52, safe: 70 },
-    { name: '배준우', compId: 'comp_sample_gangnam', compName: '다비치안경 대치본점 (직영점)', dept: '고객서비스팀', pos: '매니저', num: 'ST-2030', pref: 'ECVO', cap: 60, safe: 65 },
-    { name: '조유나', compId: 'comp_sample_busan', compName: '다비치안경 부산서면점 (가맹점)', dept: '전문검안팀', pos: '책임안경사', num: 'BS-3005', pref: 'RAVP', cap: 68, safe: 92 },
-    { name: '강태석', compId: 'comp_sample_busan', compName: '다비치안경 부산서면점 (가맹점)', dept: '매장영업팀', pos: '주임', num: 'BS-3011', pref: 'EAVO', cap: 56, safe: 60 },
-    { name: '신다혜', compId: 'comp_sample_tech', compName: '다비치테크 (전산·관계사)', dept: '데이터플랫폼팀', pos: '선임연구원', num: 'TC-4009', pref: 'EAIP', cap: 88, safe: 85 },
-    { name: '임도현', compId: 'comp_sample_tech', compName: '다비치테크 (전산·관계사)', dept: 'ERP개발팀', pos: '연구원', num: 'TC-4022', pref: 'RAIP', cap: 75, safe: 80 },
+    { name: '이수연', compId: 'comp_davich_hq', compName: '다비치안경 본사', dept: '마케팅전략팀', pos: '과장', num: 'HQ-1024', pref: 'ECIP', cap: 78, safe: 85 },
+    { name: '정동진', compId: 'comp_davich_hq', compName: '다비치안경 본사', dept: '경영지원팀', pos: '대리', num: 'HQ-1055', pref: 'RAVP', cap: 64, safe: 90 },
+    { name: '윤지혜', compId: 'comp_davich_hq', compName: '다비치안경 본사', dept: 'IT혁신팀', pos: '팀장', num: 'HQ-1008', pref: 'EAVP', cap: 92, safe: 95 },
+    { name: '한소라', compId: 'comp_davich_hq', compName: '다비치안경 본사', dept: '교육개발팀', pos: '주임', num: 'HQ-1072', pref: 'RCVP', cap: 58, safe: 75 },
+    { name: '김민준', compId: 'comp_store_gangnam', compName: '다비치안경 강남점', dept: '안경사 1팀 (시력검사)', pos: '수석안경사', num: 'ST-2001', pref: 'RAVO', cap: 72, safe: 88 },
+    { name: '오세린', compId: 'comp_store_gangnam', compName: '다비치안경 강남점', dept: '안경사 2팀 (콘택트/가공)', pos: '안경사', num: 'ST-2014', pref: 'RCVO', cap: 52, safe: 70 },
+    { name: '배준우', compId: 'comp_store_gangnam', compName: '다비치안경 강남점', dept: '고객서비스팀', pos: '매니저', num: 'ST-2030', pref: 'ECVO', cap: 60, safe: 65 },
+    { name: '조유나', compId: 'comp_store_daechi', compName: '다비치안경 대치본점', dept: '전문검안팀', pos: '책임안경사', num: 'BS-3005', pref: 'RAVP', cap: 68, safe: 92 },
+    { name: '강태석', compId: 'comp_store_daechi', compName: '다비치안경 대치본점', dept: '콘택트렌즈팀', pos: '주임', num: 'BS-3011', pref: 'EAVO', cap: 56, safe: 60 },
+    { name: '신다혜', compId: 'comp_store_myeongdong', compName: '다비치안경 명동점', dept: '안경사팀 (시력검사)', pos: '수석안경사', num: 'TC-4009', pref: 'EAIP', cap: 88, safe: 85 },
+    { name: '임도현', compId: 'comp_store_myeongdong', compName: '다비치안경 명동점', dept: '조제가공실', pos: '안경사', num: 'TC-4022', pref: 'RAIP', cap: 75, safe: 80 },
   ];
 
   rawStaffList.forEach((staff, index) => {
@@ -1439,14 +1554,35 @@ export function loadSampleDataset() {
     });
   });
 
+  const currentState = getStoredState();
+  const existingSubIds = new Set(currentState.submissions.map((s) => s.id));
+  const mergedSubmissions = [
+    ...currentState.submissions,
+    ...sampleSubmissions.filter((s) => !existingSubIds.has(s.id)),
+  ];
+  const existingTaskIds = new Set(currentState.automationTasks.map((t) => t.id));
+  const mergedTasks = [
+    ...currentState.automationTasks,
+    ...sampleTasks.filter((t) => !existingTaskIds.has(t.id)),
+  ];
+  const existingAssignIds = new Set(currentState.assignments.map((a) => a.id));
+  const mergedAssignments = [
+    ...currentState.assignments,
+    ...sampleAssignments.filter((a) => !existingAssignIds.has(a.id)),
+  ];
+
   const fullSampleState: StorageState = {
-    companies: sampleCompanies,
-    submissions: sampleSubmissions,
-    assignments: sampleAssignments,
-    automationTasks: sampleTasks,
+    ...currentState,
+    companies: currentState.companies.length > 0 ? currentState.companies : INITIAL_COMPANIES,
+    submissions: mergedSubmissions,
+    assignments: mergedAssignments,
+    automationTasks: mergedTasks,
   };
 
   saveState(fullSampleState);
+  for (const sub of mergedSubmissions) {
+    publishCloudEvent({ type: 'SUBMISSION_UPSERT', submission: sub, ts: Date.now() });
+  }
   return fullSampleState;
 }
 
