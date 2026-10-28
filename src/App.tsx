@@ -15,6 +15,7 @@ import {
   getOrCreateCompanyByCode,
   getSavedRespondentSession,
   saveRespondentSession,
+  isSubmissionForCompany,
 } from './lib/storage';
 import { AssessmentSubmission, AdminUser, Company } from './types/davich';
 import { X, Lock } from 'lucide-react';
@@ -51,12 +52,27 @@ export default function App() {
     // Root main screen always defaults to LINKS (Master Login Gate -> HQ Link Manager)
     return 'LINKS';
   });
-  const [selectedCompanyCode, setSelectedCompanyCode] = useState<string | null>(null);
+  const [selectedCompanyCode, setSelectedCompanyCode] = useState<string | null>(() => {
+    if (typeof window === 'undefined') return null;
+    const params = new URLSearchParams(window.location.search);
+    const qComp = params.get('company');
+    if (qComp) return qComp;
+    const PREBUILT_CODES = ['davich-hq', 'store-gangnam', 'store-daechi', 'davich-sx7r'];
+    const pathParts = window.location.pathname.split('/').filter(Boolean);
+    return pathParts.find((p) => PREBUILT_CODES.includes(p.toLowerCase())) || null;
+  });
   const [selectedAdminCompanyId, setSelectedAdminCompanyId] = useState<string>(() => {
     const saved = getSavedAdminSession();
     return saved?.role === 'COMPANY_MANAGER' && saved.companyId ? saved.companyId : 'ALL';
   });
-  const [isDedicatedSurveyMode, setIsDedicatedSurveyMode] = useState<boolean>(false);
+  const [isDedicatedSurveyMode, setIsDedicatedSurveyMode] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return false;
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('company')) return true;
+    const PREBUILT_CODES = ['davich-hq', 'store-gangnam', 'store-daechi', 'davich-sx7r'];
+    const pathParts = window.location.pathname.split('/').filter(Boolean);
+    return pathParts.some((p) => PREBUILT_CODES.includes(p.toLowerCase()));
+  });
   const [headerLoginCompany, setHeaderLoginCompany] = useState<Company | null>(null);
 
   // Currently viewed submission in Result tab: initialized strictly from respondent session if verified
@@ -122,10 +138,10 @@ export default function App() {
     }
   }, []);
 
-  // Count submissions per company
+  // Count submissions per company (matching by companyId, code, or companyName)
   const submissionCounts: Record<string, number> = {};
-  store.submissions.forEach((s) => {
-    submissionCounts[s.companyId] = (submissionCounts[s.companyId] || 0) + 1;
+  store.companies.forEach((comp) => {
+    submissionCounts[comp.id] = store.submissions.filter((s) => isSubmissionForCompany(s, comp)).length;
   });
 
   // Find currently selected company
@@ -149,12 +165,15 @@ export default function App() {
   };
 
   const handleFilterAdminByCompany = (companyId: string) => {
+    setStore({ ...getStoredState() });
     setSelectedAdminCompanyId(companyId);
     setActiveTab('ADMIN');
   };
 
   const handleSubmissionComplete = (submission: AssessmentSubmission) => {
+    setStore({ ...getStoredState() });
     setLatestSubmission(submission);
+    setSelectedAdminCompanyId(submission.companyId);
     saveRespondentSession({
       submissionId: submission.id,
       companyId: submission.companyId,

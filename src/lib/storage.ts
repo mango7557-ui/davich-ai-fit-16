@@ -83,21 +83,6 @@ export interface StorageState {
 
 export const INITIAL_COMPANIES: Company[] = [
   {
-    id: 'comp_store_gangnam',
-    code: 'store-gangnam',
-    name: '다비치안경 강남점',
-    category: 'STORE',
-    managerName: '박서현 원장',
-    managerId: 'gangnam_admin',
-    managerPassword: '1234',
-    contactEmail: 'gangnam@davichstore.com',
-    allowedDepartments: ['안경사 1팀 (시력검사)', '안경사 2팀 (콘택트/가공)', '고객서비스팀', '매장영업팀'],
-    allowedPositions: DEFAULT_STORE_POSITIONS,
-    active: true,
-    targetRespondentCount: 15,
-    createdAt: '2026-10-15T09:00:00.000Z',
-  },
-  {
     id: 'comp_davich_hq',
     code: 'davich-hq',
     name: '다비치안경 본사',
@@ -111,6 +96,21 @@ export const INITIAL_COMPANIES: Company[] = [
     active: true,
     targetRespondentCount: 45,
     createdAt: '2026-10-10T09:00:00.000Z',
+  },
+  {
+    id: 'comp_store_gangnam',
+    code: 'store-gangnam',
+    name: '다비치안경 강남점',
+    category: 'STORE',
+    managerName: '박서현 원장',
+    managerId: 'gangnam_admin',
+    managerPassword: '1234',
+    contactEmail: 'gangnam@davichstore.com',
+    allowedDepartments: ['안경사 1팀 (시력검사)', '안경사 2팀 (콘택트/가공)', '고객서비스팀', '매장영업팀'],
+    allowedPositions: DEFAULT_STORE_POSITIONS,
+    active: true,
+    targetRespondentCount: 15,
+    createdAt: '2026-10-15T09:00:00.000Z',
   },
   {
     id: 'comp_store_daechi',
@@ -193,9 +193,35 @@ export function getStoredState(): StorageState {
           : DEFAULT_STORE_POSITIONS,
     }));
 
+    const hqComp = comps.find((c: Company) => c.code === 'davich-hq' || c.id === 'comp_davich_hq');
+    const hqDepts = ['경영지원팀', '마케팅전략팀', '가맹운영팀', '교육개발팀', 'IT혁신팀'];
+
+    const normalizedSubmissions = (Array.isArray(parsed.submissions) ? parsed.submissions : []).map(
+      (s: AssessmentSubmission) => {
+        if (
+          hqComp &&
+          (s.companyId === 'comp_sample_hq' ||
+            s.companyId === 'davich-hq' ||
+            s.respondent?.companyName?.includes('본사') ||
+            (s.respondent?.department && hqDepts.includes(s.respondent.department.trim())))
+        ) {
+          return {
+            ...s,
+            companyId: hqComp.id,
+            respondent: {
+              ...s.respondent,
+              companyId: hqComp.id,
+              companyName: hqComp.name,
+            },
+          };
+        }
+        return s;
+      }
+    );
+
     return {
       companies: comps,
-      submissions: Array.isArray(parsed.submissions) ? parsed.submissions : [],
+      submissions: normalizedSubmissions,
       assignments: Array.isArray(parsed.assignments) ? parsed.assignments : [],
       automationTasks: Array.isArray(parsed.automationTasks) ? parsed.automationTasks : [],
       registeredStaff: Array.isArray(parsed.registeredStaff) ? parsed.registeredStaff : [],
@@ -226,9 +252,64 @@ export function saveState(state: StorageState) {
 
 export function subscribeStorage(listener: Listener): () => void {
   listeners.add(listener);
+
+  if (typeof window !== 'undefined' && !(window as any).__davichStorageSyncBound) {
+    (window as any).__davichStorageSyncBound = true;
+    const syncFromDisk = () => {
+      const latest = getStoredState();
+      notify(latest);
+    };
+    window.addEventListener('storage', (e) => {
+      if (!e.key || e.key === STORAGE_KEY) {
+        syncFromDisk();
+      }
+    });
+    window.addEventListener('focus', syncFromDisk);
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') {
+        syncFromDisk();
+      }
+    });
+  }
+
   return () => {
     listeners.delete(listener);
   };
+}
+
+/**
+ * Checks whether a submission or record belongs to a target company
+ * by matching companyId, companyCode, or normalized companyName.
+ */
+export function isSubmissionForCompany(
+  sub: { companyId?: string; companyName?: string; respondent?: { companyId?: string; companyName?: string; department?: string } },
+  company: Company | undefined | null
+): boolean {
+  if (!company) return false;
+  const subCompId = (sub.companyId || sub.respondent?.companyId || '').trim().toLowerCase();
+  const subCompName = (sub.companyName || sub.respondent?.companyName || '').replace(/\s+/g, '').toLowerCase();
+  const targetId = company.id.trim().toLowerCase();
+  const targetCode = company.code.trim().toLowerCase();
+  const targetName = company.name.replace(/\s+/g, '').toLowerCase();
+
+  if (subCompId === targetId || subCompId === targetCode) return true;
+  if (subCompName && (subCompName === targetName || subCompName.includes(targetName) || targetName.includes(subCompName))) {
+    return true;
+  }
+  // Handle legacy sample IDs
+  if (targetCode === 'davich-hq' && (subCompId === 'comp_sample_hq' || subCompId === 'comp_davich_hq')) return true;
+  if (targetCode === 'store-daechi' && (subCompId === 'comp_sample_gangnam' || subCompId === 'comp_store_daechi')) return true;
+
+  // Also if respondent's department is a unique HQ department (경영지원팀, 마케팅전략팀, 가맹운영팀, 교육개발팀, IT혁신팀) and company is HQ
+  if (
+    targetCode === 'davich-hq' &&
+    sub.respondent?.department &&
+    ['경영지원팀', '마케팅전략팀', '가맹운영팀', '교육개발팀', 'IT혁신팀'].includes(sub.respondent.department.trim())
+  ) {
+    return true;
+  }
+
+  return false;
 }
 
 export function addCompany(companyData: Omit<Company, 'id' | 'createdAt'>): Company {

@@ -50,6 +50,7 @@ import {
   addRegisteredStaff,
   deleteRegisteredStaff,
   getStoredState,
+  isSubmissionForCompany,
 } from '../lib/storage';
 import { KakaoShareModal } from './KakaoShareModal';
 
@@ -78,10 +79,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   onNavigateToSurvey,
   adminUser,
 }) => {
-  // If a specific company is selected, default to STAFF (Employee Management)
-  const [activeTab, setActiveTab] = useState<'STAFF' | 'OVERVIEW' | 'TRAINING' | 'TASKS'>(() =>
-    selectedCompanyId !== 'ALL' ? 'STAFF' : 'OVERVIEW'
-  );
+  // Default to STAFF (Employee Management) so submitted respondents are immediately visible
+  const [activeTab, setActiveTab] = useState<'STAFF' | 'OVERVIEW' | 'TRAINING' | 'TASKS'>('STAFF');
   const [staffSearch, setStaffSearch] = useState('');
   const [filterType, setFilterType] = useState<string | null>(null);
   const [staffStatusFilter, setStaffStatusFilter] = useState<'ALL' | 'COMPLETED' | 'PENDING'>('ALL');
@@ -134,19 +133,19 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
   const filteredSubmissions = isAllCompaniesView
     ? submissions
-    : submissions.filter((s) => s.companyId === targetCompanyId);
+    : submissions.filter((s) => isSubmissionForCompany(s, currentCompany) || s.companyId === targetCompanyId);
 
   const filteredTasks = isAllCompaniesView
     ? automationTasks
-    : automationTasks.filter((t) => t.companyId === targetCompanyId);
+    : automationTasks.filter((t) => isSubmissionForCompany(t, currentCompany) || t.companyId === targetCompanyId);
 
   const filteredAssignments = isAllCompaniesView
     ? assignments
-    : assignments.filter((a) => a.companyId === targetCompanyId);
+    : assignments.filter((a) => isSubmissionForCompany(a, currentCompany) || a.companyId === targetCompanyId);
 
   const filteredRegisteredStaff = isAllCompaniesView
     ? registeredStaffList
-    : registeredStaffList.filter((s) => s.companyId === targetCompanyId);
+    : registeredStaffList.filter((s) => isSubmissionForCompany(s, currentCompany) || s.companyId === targetCompanyId);
 
   // Identify pre-registered staff who haven't completed submission yet
   const pendingStaff = filteredRegisteredStaff.filter(

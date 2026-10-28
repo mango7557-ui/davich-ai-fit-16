@@ -123,10 +123,14 @@ export const SurveyView: React.FC<SurveyViewProps> = ({
       if (found) {
         setCurrentCompany(found);
         if (found.allowedDepartments && found.allowedDepartments.length > 0) {
-          setDepartment((prev) => prev || found.allowedDepartments[0]);
+          setDepartment((prev) =>
+            prev && found!.allowedDepartments.includes(prev) ? prev : found!.allowedDepartments[0]
+          );
         }
         if (found.allowedPositions && found.allowedPositions.length > 0) {
-          setPosition((prev) => prev || found.allowedPositions![0]);
+          setPosition((prev) =>
+            prev && found!.allowedPositions!.includes(prev) ? prev : found!.allowedPositions![0]
+          );
         }
         setIsStarted(true); // Open survey questions directly
       }
@@ -437,7 +441,12 @@ export const SurveyView: React.FC<SurveyViewProps> = ({
 
   // Final Submit
   const handleSubmit = () => {
-    if (!currentCompany) return;
+    const targetCompany =
+      (selectedCompanyCode &&
+        companies.find((c) => c.code.toLowerCase() === selectedCompanyCode.toLowerCase())) ||
+      currentCompany;
+
+    if (!targetCompany) return;
 
     const scores = evaluateAssessmentScores(
       usageAnswers,
@@ -450,8 +459,8 @@ export const SurveyView: React.FC<SurveyViewProps> = ({
       name: name.trim(),
       password: password.trim(),
       employeeNumber: employeeNumber.trim(),
-      companyId: currentCompany.id,
-      companyName: currentCompany.name,
+      companyId: targetCompany.id,
+      companyName: targetCompany.name,
       department: department.trim(),
       position: position.trim(),
       jobFunction: jobFunction.trim() || '일반 실무',
@@ -459,7 +468,7 @@ export const SurveyView: React.FC<SurveyViewProps> = ({
 
     const submission: AssessmentSubmission = {
       id: loadedSubmissionId || `sub_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
-      companyId: currentCompany.id,
+      companyId: targetCompany.id,
       respondent,
       submittedAt: new Date().toISOString(),
       answers: {
@@ -482,8 +491,8 @@ export const SurveyView: React.FC<SurveyViewProps> = ({
       scores,
     };
 
-    saveSubmission(submission);
-    onSubmissionComplete(submission);
+    const saved = saveSubmission(submission);
+    onSubmissionComplete(saved);
   };
 
   // If no company resolved yet, auto-fallback to initial company
