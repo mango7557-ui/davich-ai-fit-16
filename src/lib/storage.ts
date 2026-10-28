@@ -197,25 +197,44 @@ export function findCompanyById(id: string): Company | undefined {
   return state.companies.find((c) => c.id === id);
 }
 
-export function getOrCreateCompanyByCode(code: string): Company {
+export function getOrCreateCompanyByCode(code: string, customName?: string): Company {
   const state = getStoredState();
   const cleanCode = code.trim().toLowerCase();
-  const found = state.companies.find((c) => c.code.toLowerCase() === cleanCode);
-  if (found) return found;
 
-  // Auto-generate company so no user ever sees an empty error
-  let compName = '다비치안경 ' + (cleanCode === 'store-gangnam' || cleanCode.includes('gangnam') ? '강남점' : cleanCode.toUpperCase());
-  if (cleanCode.includes('daechi')) compName = '다비치안경 대치본점';
-  if (cleanCode.includes('myeongdong') || cleanCode === 'davich-sx7r') compName = '다비치안경 명동점';
-  if (cleanCode.includes('hq') || cleanCode.includes('main')) compName = '다비치안경 본사';
+  let urlName = customName?.trim() || '';
+  let urlAdminId = '';
+  if (!urlName && typeof window !== 'undefined') {
+    const params = new URLSearchParams(window.location.search);
+    urlName = (params.get('name') || '').trim();
+    urlAdminId = (params.get('admin') || '').trim();
+  }
+
+  const found = state.companies.find((c) => c.code.toLowerCase() === cleanCode);
+  if (found) {
+    if (urlName && found.name !== urlName) {
+      const updated = updateCompany(found.id, { name: urlName });
+      if (updated) return updated;
+    }
+    return found;
+  }
+
+  // Auto-generate company with exact link creation name
+  let compName =
+    urlName ||
+    '다비치안경 ' + (cleanCode === 'store-gangnam' || cleanCode.includes('gangnam') ? '강남점' : cleanCode.toUpperCase());
+  if (!urlName) {
+    if (cleanCode.includes('daechi')) compName = '다비치안경 대치본점';
+    if (cleanCode.includes('myeongdong') || cleanCode === 'davich-sx7r') compName = '다비치안경 명동점';
+    if (cleanCode.includes('hq') || cleanCode.includes('main')) compName = '다비치안경 본사';
+  }
 
   const newComp: Company = {
     id: `comp_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
     code: cleanCode,
     name: compName,
     category: cleanCode.includes('hq') ? 'HQ' : 'STORE',
-    managerName: '지점 관리자',
-    managerId: `admin_${cleanCode.replace(/[^a-z0-9]/g, '_')}`,
+    managerName: `${compName} 관리자`,
+    managerId: urlAdminId || `admin_${cleanCode.replace(/[^a-z0-9]/g, '_')}`,
     managerPassword: '1234',
     contactEmail: `${cleanCode}@davichstore.com`,
     allowedDepartments: ['안경사 1팀 (시력검사)', '안경사 2팀 (콘택트/가공)', '고객서비스팀', '매장영업팀'],

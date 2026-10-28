@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { Company, CompanyCategory, AdminUser } from '../types/davich';
 import { addCompany, deleteCompany, updateCompany } from '../lib/storage';
+import { generateCompanyThumbnailDataUrl } from '../lib/thumbnailGenerator';
 import { CompanyAdminLoginModal } from './CompanyAdminLoginModal';
 import { KakaoShareModal } from './KakaoShareModal';
 
@@ -149,9 +150,26 @@ export const CompanyLinkManager: React.FC<CompanyLinkManagerProps> = ({
   };
 
   const getFullSurveyUrl = (companyCode: string) => {
-    if (typeof window === 'undefined') return `?company=${companyCode}`;
-    const base = window.location.origin + window.location.pathname;
-    return `${base}?company=${companyCode}`;
+    const matched = companies.find((c) => c.code === companyCode);
+    const nameParam = matched?.name ? `&name=${encodeURIComponent(matched.name)}` : '';
+    if (typeof window === 'undefined') return `?company=${companyCode}${nameParam}`;
+
+    const PREBUILT_CODES = ['davich-hq', 'store-gangnam', 'store-daechi', 'davich-sx7r'];
+    let basePath = window.location.pathname;
+    for (const c of PREBUILT_CODES) {
+      if (basePath.endsWith(`/${c}/`)) {
+        basePath = basePath.slice(0, -(`${c}/`.length));
+      } else if (basePath.endsWith(`/${c}`)) {
+        basePath = basePath.slice(0, -(c.length));
+      }
+    }
+    if (!basePath.endsWith('/')) basePath += '/';
+    const base = window.location.origin + basePath;
+
+    if (PREBUILT_CODES.includes(companyCode)) {
+      return `${base}${companyCode}/?company=${companyCode}${nameParam}`;
+    }
+    return `${base}?company=${companyCode}${nameParam}`;
   };
 
   const handleCopyLink = (companyCode: string) => {
@@ -755,17 +773,17 @@ export const CompanyLinkManager: React.FC<CompanyLinkManagerProps> = ({
               </div>
               <div className="aspect-[16/9] w-full overflow-hidden bg-slate-900">
                 <img
-                  src="og-image.png"
-                  alt="카카오톡 공유 썸네일"
+                  src={generateCompanyThumbnailDataUrl(qrModalCompany.name)}
+                  alt={`${qrModalCompany.name} 카카오톡 공유 썸네일`}
                   className="w-full h-full object-cover"
                 />
               </div>
               <div className="p-3 bg-white space-y-0.5">
                 <div className="text-xs font-bold text-slate-900 line-clamp-1">
-                  DAVICH AI FIT 16 — {qrModalCompany.name} 전용 진단
+                  {qrModalCompany.name} AI 역량 & 16 성향 진단
                 </div>
                 <div className="text-[11px] text-slate-500 line-clamp-1">
-                  다비치안경 임직원 및 기업 전용 AI 역량 진단 및 16개 업무 성향 분석
+                  {qrModalCompany.name} 임직원 전용 AI 역량 & 성향 진단 (DAVICH AI FIT 16)
                 </div>
                 <div className="text-[10px] text-slate-400 font-mono pt-1">
                   {typeof window !== 'undefined' ? window.location.host : 'davich-aifit16.com'}

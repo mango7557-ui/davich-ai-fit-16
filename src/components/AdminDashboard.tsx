@@ -237,9 +237,26 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
   // Copy KakaoTalk / Workplace Invite Text
   const getCompanySurveyUrl = (compCode: string) => {
-    if (typeof window === 'undefined') return `?company=${compCode}`;
-    const base = window.location.origin + window.location.pathname;
-    return `${base}?company=${compCode}`;
+    const matched = companies.find((c) => c.code === compCode) || currentCompany;
+    const nameParam = matched?.name ? `&name=${encodeURIComponent(matched.name)}` : '';
+    if (typeof window === 'undefined') return `?company=${compCode}${nameParam}`;
+
+    const PREBUILT_CODES = ['davich-hq', 'store-gangnam', 'store-daechi', 'davich-sx7r'];
+    let basePath = window.location.pathname;
+    for (const c of PREBUILT_CODES) {
+      if (basePath.endsWith(`/${c}/`)) {
+        basePath = basePath.slice(0, -(`${c}/`.length));
+      } else if (basePath.endsWith(`/${c}`)) {
+        basePath = basePath.slice(0, -(c.length));
+      }
+    }
+    if (!basePath.endsWith('/')) basePath += '/';
+    const base = window.location.origin + basePath;
+
+    if (PREBUILT_CODES.includes(compCode)) {
+      return `${base}${compCode}/?company=${compCode}${nameParam}`;
+    }
+    return `${base}?company=${compCode}${nameParam}`;
   };
 
   const handleCopyInviteMessage = () => {

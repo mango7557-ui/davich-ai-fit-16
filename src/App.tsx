@@ -25,7 +25,11 @@ export default function App() {
     const saved = getSavedAdminSession();
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
-      if (!params.get('company') && saved?.role === 'COMPANY_MANAGER') {
+      const pathParts = window.location.pathname.split('/').filter(Boolean);
+      const hasCompanyInUrl =
+        Boolean(params.get('company')) ||
+        pathParts.some((p) => ['davich-hq', 'store-gangnam', 'store-daechi', 'davich-sx7r'].includes(p.toLowerCase()));
+      if (!hasCompanyInUrl && saved?.role === 'COMPANY_MANAGER') {
         // Main root screen is strictly for Master Admin login
         return null;
       }
@@ -35,7 +39,11 @@ export default function App() {
   const [activeTab, setActiveTab] = useState<'LINKS' | 'SURVEY' | 'RESULT' | 'ADMIN'>(() => {
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
-      if (params.get('company')) {
+      const pathParts = window.location.pathname.split('/').filter(Boolean);
+      const hasCompanyInUrl =
+        Boolean(params.get('company')) ||
+        pathParts.some((p) => ['davich-hq', 'store-gangnam', 'store-daechi', 'davich-sx7r'].includes(p.toLowerCase()));
+      if (hasCompanyInUrl) {
         const saved = getSavedAdminSession();
         return saved?.role === 'COMPANY_MANAGER' ? 'ADMIN' : 'SURVEY';
       }
@@ -70,11 +78,22 @@ export default function App() {
     return () => unsubscribe();
   }, []);
 
+  // Helper to detect company code from query string OR path segment
+  const detectCompanyCodeFromLocation = (): string | null => {
+    if (typeof window === 'undefined') return null;
+    const params = new URLSearchParams(window.location.search);
+    const qComp = params.get('company');
+    if (qComp) return qComp;
+    const PREBUILT_CODES = ['davich-hq', 'store-gangnam', 'store-daechi', 'davich-sx7r'];
+    const pathParts = window.location.pathname.split('/').filter(Boolean);
+    const matchedCode = pathParts.find((p) => PREBUILT_CODES.includes(p.toLowerCase()));
+    return matchedCode || null;
+  };
+
   // Parse URL query parameter (?company=...) and isolate section strictly per company link
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      const params = new URLSearchParams(window.location.search);
-      const companyParam = params.get('company');
+      const companyParam = detectCompanyCodeFromLocation();
       if (companyParam) {
         const comp = getOrCreateCompanyByCode(companyParam);
         setSelectedCompanyCode(companyParam);
@@ -182,15 +201,12 @@ export default function App() {
         onAdminLogout={() => {
           saveAdminSession(null);
           setAdminUser(null);
-          if (typeof window !== 'undefined') {
-            const params = new URLSearchParams(window.location.search);
-            const companyParam = params.get('company');
-            if (companyParam) {
-              setSelectedCompanyCode(companyParam);
-              setIsDedicatedSurveyMode(true);
-              setActiveTab('SURVEY');
-              return;
-            }
+          const companyParam = detectCompanyCodeFromLocation();
+          if (companyParam) {
+            setSelectedCompanyCode(companyParam);
+            setIsDedicatedSurveyMode(true);
+            setActiveTab('SURVEY');
+            return;
           }
           setIsDedicatedSurveyMode(false);
           setSelectedCompanyCode(null);

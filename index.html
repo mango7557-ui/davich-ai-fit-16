@@ -11,8 +11,8 @@
     <meta property="og:site_name" content="다비치안경 DAVICH AI FIT 16" />
     <meta property="og:title" content="다비치안경 AI 역량 & 16 성향 진단 (DAVICH AI FIT 16)" />
     <meta property="og:description" content="16개 업무 성향 진단 및 현장 업무 자동화 설문 참여 (소요시간 약 10~15분 · 수신 후 1주일 이내 완료)" />
-    <meta property="og:image" content="/og-image.png" />
-    <meta property="og:image:secure_url" content="/og-image.png" />
+    <meta property="og:image" content="https://mango7557-ui.github.io/davich-ai-fit-16/og-image.png" />
+    <meta property="og:image:secure_url" content="https://mango7557-ui.github.io/davich-ai-fit-16/og-image.png" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
     <meta property="og:image:type" content="image/png" />
@@ -22,7 +22,7 @@
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="다비치안경 AI 역량 & 16 성향 진단 (DAVICH AI FIT 16)" />
     <meta name="twitter:description" content="16개 업무 성향 진단 및 현장 업무 자동화 설문 참여 (소요시간 약 10~15분 · 수신 후 1주일 이내 완료)" />
-    <meta name="twitter:image" content="/og-image.png" />
+    <meta name="twitter:image" content="https://mango7557-ui.github.io/davich-ai-fit-16/og-image.png" />
 
     <!-- Favicons -->
     <link rel="icon" type="image/png" href="assets/aistudio/___-_ceodavich_final_clean_da550648.png" />
@@ -33,7 +33,15 @@
     <script>
       (function() {
         try {
-          var fullImgUrl = new URL('og-image.png', window.location.href).href;
+          // Company parameter dynamic title & subtitle
+          var params = new URLSearchParams(window.location.search);
+          var companyCode = params.get('company');
+          var customName = params.get('name');
+          var prebuilt = ['davich-hq', 'store-gangnam', 'store-daechi', 'davich-sx7r'];
+          var imgFile = (companyCode && prebuilt.indexOf(companyCode.toLowerCase()) !== -1)
+            ? 'og-' + companyCode.toLowerCase() + '.png'
+            : 'og-image.png';
+          var fullImgUrl = new URL(imgFile, document.baseURI || window.location.href).href;
 
           // Set absolute image URLs
           var ogImg = document.querySelector('meta[property="og:image"]');
@@ -42,11 +50,7 @@
           if (ogSecureImg) ogSecureImg.setAttribute('content', fullImgUrl);
           var twImg = document.querySelector('meta[name="twitter:image"]');
           if (twImg) twImg.setAttribute('content', fullImgUrl);
-
-          // Company parameter dynamic title & subtitle
-          var params = new URLSearchParams(window.location.search);
-          var companyCode = params.get('company');
-          if (companyCode) {
+          if (companyCode || customName) {
             var compMap = {
               'store-gangnam': '다비치안경 강남점',
               'davich-hq': '다비치안경 본사',
@@ -54,9 +58,9 @@
               'davich-sx7r': '다비치안경 명동점',
               'store-myeongdong': '다비치안경 명동점'
             };
-            var cName = compMap[companyCode.toLowerCase()] || '다비치안경 전용 지점';
-            var companyTitle = '[' + cName + '] 임직원 AI 역량 & 16 성향 진단 (DAVICH AI FIT 16)';
-            var companyDesc = '16개 업무 성향 진단 및 현장 업무 자동화 설문 참여 (소요시간: 약 10~15분 · 수신 후 1주일 이내 완료)';
+            var cName = customName || (companyCode && compMap[companyCode.toLowerCase()]) || '다비치안경 전용 지점';
+            var companyTitle = cName + ' AI 역량 & 16 성향 진단';
+            var companyDesc = cName + ' 임직원 전용 AI 역량 & 성향 진단 (DAVICH AI FIT 16)';
 
             document.title = companyTitle;
 

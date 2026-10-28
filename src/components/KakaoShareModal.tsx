@@ -14,6 +14,7 @@ import {
   Key,
 } from 'lucide-react';
 import { Company } from '../types/davich';
+import { generateCompanyThumbnailDataUrl } from '../lib/thumbnailGenerator';
 
 interface KakaoShareModalProps {
   company: Company | null;
@@ -37,12 +38,13 @@ export const KakaoShareModal: React.FC<KakaoShareModalProps> = ({
   onClose,
   surveyUrl,
 }) => {
-  const companyName = company?.name || '기업';
-  const defaultTopic = `[${companyName}] 임직원 AI 역량 & 16 성향 진단 (DAVICH AI FIT 16)`;
-  const defaultSubtitle = `16개 업무 성향 진단 및 현장 업무 자동화 설문 참여 (소요시간: 약 10~15분 · 수신 후 1주일 이내 완료)`;
+  const companyName = company?.name || '다비치안경';
+  const defaultTopic = `${companyName} AI 역량 & 16 성향 진단`;
+  const defaultSubtitle = `${companyName} 임직원 전용 AI 역량 & 성향 진단 (DAVICH AI FIT 16)`;
 
   const [topic, setTopic] = useState(defaultTopic);
   const [subtitle, setSubtitle] = useState(defaultSubtitle);
+  const [customThumbDataUrl, setCustomThumbDataUrl] = useState<string>('og-image.png');
   const [copiedType, setCopiedType] = useState<'ALL' | 'LINK' | 'IMAGE' | null>(null);
   const [kakaoKey, setKakaoKey] = useState<string>(() => {
     if (typeof window !== 'undefined') {
@@ -55,18 +57,32 @@ export const KakaoShareModal: React.FC<KakaoShareModalProps> = ({
 
   useEffect(() => {
     if (company) {
-      setTopic(`[${company.name}] 임직원 AI 역량 & 16 성향 진단 (DAVICH AI FIT 16)`);
-      setSubtitle(`16개 업무 성향 진단 및 현장 업무 자동화 설문 참여 (소요시간: 약 10~15분 · 수신 후 1주일 이내 완료)`);
+      const nextTopic = `${company.name} AI 역량 & 16 성향 진단`;
+      const nextSub = `${company.name} 임직원 전용 AI 역량 & 성향 진단 (DAVICH AI FIT 16)`;
+      setTopic(nextTopic);
+      setSubtitle(nextSub);
+      setCustomThumbDataUrl(generateCompanyThumbnailDataUrl(company.name, nextTopic, nextSub));
     }
   }, [company]);
 
+  useEffect(() => {
+    if (company) {
+      setCustomThumbDataUrl(generateCompanyThumbnailDataUrl(company.name, topic, subtitle));
+    }
+  }, [company, topic, subtitle]);
+
   if (!isOpen || !company) return null;
 
-  // Absolute thumbnail URL
+  // Per-company static OG image URL for KakaoTalk scraper + fallback
+  const PREBUILT_CODES = ['davich-hq', 'store-gangnam', 'store-daechi', 'davich-sx7r'];
+  const ogFileName = PREBUILT_CODES.includes(company.code)
+    ? `og-${company.code}.png`
+    : 'og-image.png';
+
   const absoluteThumbnailUrl =
     typeof window !== 'undefined'
-      ? new URL('og-image.png', window.location.href).href
-      : 'og-image.png';
+      ? new URL(ogFileName, window.location.href).href
+      : ogFileName;
 
   const fullDisplayUrl =
     typeof window !== 'undefined'
@@ -264,12 +280,12 @@ ${surveyUrl}
                   {/* Thumbnail Banner */}
                   <div className="relative aspect-[16/9] w-full bg-gradient-to-br from-blue-900 to-indigo-950 overflow-hidden">
                     <img
-                      src="og-image.png"
-                      alt="다비치안경 AI FIT 16 썸네일"
+                      src={customThumbDataUrl}
+                      alt={`${company.name} AI FIT 16 전용 썸네일`}
                       className="w-full h-full object-cover"
                     />
                     <div className="absolute top-2.5 left-2.5 px-2 py-0.5 rounded-md bg-blue-600/90 text-white font-bold text-[10px] tracking-wide shadow-xs backdrop-blur-xs">
-                      {company.name} 전용
+                      {company.name} 전용 썸네일
                     </div>
                   </div>
 
@@ -427,12 +443,12 @@ ${surveyUrl}
           {/* Download / Copy Thumbnail Asset */}
           <div className="flex items-center justify-between pt-2 text-[11px] text-slate-500">
             <a
-              href="og-image.png"
-              download={`${company.code}-kakao-thumbnail.png`}
+              href={customThumbDataUrl}
+              download={`${company.name}-카카오톡썸네일.png`}
               className="text-slate-600 hover:text-blue-700 font-medium flex items-center gap-1 hover:underline"
             >
               <Download className="w-3.5 h-3.5" />
-              <span>1200x630 썸네일 이미지 직접 다운로드</span>
+              <span>[{company.name}] 맞춤 썸네일 이미지 다운로드</span>
             </a>
 
             <button
