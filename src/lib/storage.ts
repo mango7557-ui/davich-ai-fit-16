@@ -937,6 +937,8 @@ export function loadSampleDataset() {
       U06: 'LACK_SKILL',
       U07: staff.cap > 70 ? '31_60_MIN' : '16_30_MIN',
       U08: 'PROMPT_WORKSHOP',
+      U09: staff.cap > 70 ? 'CONTEXT_ROLE' : 'SIMPLE_KEYWORD',
+      U10: staff.safe > 75 ? 'THOROUGH_EDIT' : 'MINOR_EDIT',
     };
 
     const scores = evaluateAssessmentScores(usageAnswers, capabilityAnswers, preferenceAnswers, quizAnswers);

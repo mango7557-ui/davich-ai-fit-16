@@ -128,8 +128,8 @@ export interface AssessmentSubmission {
   submittedAt: string;
   updatedAt?: string;
   answers: {
-    usage: Record<string, string | string[]>; // U01~U08
-    quiz?: Record<string, number>;            // Q01~Q15 (선택한 번호 1~4)
+    usage: Record<string, string | string[]>; // U01~U10 + 직접입력
+    quiz?: Record<string, number>;            // Q01~Q15 (선택한 번호 1~5)
     capability: Record<string, number>;       // C01~C20 (1..5)
     preference: Record<string, 1 | 2>;         // T01~T24 (1 or 2)
     automation?: {

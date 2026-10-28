@@ -386,6 +386,8 @@ export const SurveyView: React.FC<SurveyViewProps> = ({
       U06: 'LACK_SKILL',
       U07: '31_60_MIN',
       U08: 'PROMPT_WORKSHOP',
+      U09: 'CONTEXT_ROLE',
+      U10: 'THOROUGH_EDIT',
     });
 
     // 15 Practical Quiz answers (Q01~Q15, 14 correct and 1 realistic mistake)
@@ -529,7 +531,7 @@ export const SurveyView: React.FC<SurveyViewProps> = ({
               본 진단은 링크를 수신하신 시점부터 <span className="underline decoration-amber-500 font-extrabold text-amber-950 text-sm sm:text-base">1주일 시간 동안 반드시 완성을 마치셔야 합니다.</span>
             </p>
             <p className="text-[11px] text-amber-800 leading-normal">
-              ※ 전사 AI 활용 현황 파악 및 개인 맞춤형 교육 과정 배정을 위해 정해진 1주일 기간 내에 52문항 진단을 완료해 주시기 바랍니다. (기한 초과 시 결과 분석 및 교육 배정에 불이익이 발생할 수 있습니다)
+              ※ 전사 AI 활용 현황 파악 및 개인 맞춤형 교육 과정 배정을 위해 정해진 1주일 기간 내에 74문항 진단을 완료해 주시기 바랍니다. (기한 초과 시 결과 분석 및 교육 배정에 불이익이 발생할 수 있습니다)
             </p>
           </div>
 
@@ -537,14 +539,14 @@ export const SurveyView: React.FC<SurveyViewProps> = ({
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
             <div className="p-4 rounded-xl bg-slate-50 border border-slate-100 space-y-1">
               <div className="text-slate-400 font-medium">예상 소요 시간</div>
-              <div className="text-base font-bold text-slate-900">약 8 ~ 10분</div>
+              <div className="text-base font-bold text-slate-900">약 10 ~ 15분</div>
               <div className="text-[11px] text-slate-500">부담 없이 직관적으로 선택</div>
             </div>
 
             <div className="p-4 rounded-xl bg-slate-50 border border-slate-100 space-y-1">
               <div className="text-slate-400 font-medium">총 진단 문항</div>
-              <div className="text-base font-bold text-slate-900">52문항</div>
-              <div className="text-[11px] text-slate-500">역량 16 + 성향 24 + 과제 등</div>
+              <div className="text-base font-bold text-slate-900">74문항</div>
+              <div className="text-[11px] text-slate-500">사용현황 10 + 실전 15 + 역량 20 + 성향 24 + 과제 5</div>
             </div>
 
             <div className="p-4 rounded-xl bg-slate-50 border border-slate-100 space-y-1">
@@ -668,7 +670,7 @@ export const SurveyView: React.FC<SurveyViewProps> = ({
           </span>
           <span className="font-medium text-slate-700">
             {currentStep === 0 && '응답자 정보 & 보안 서약'}
-            {currentStep === 1 && '1. AI 사용 현황 및 환경 (8문항)'}
+            {currentStep === 1 && '1. AI 사용 현황 및 환경 (10문항)'}
             {currentStep === 2 && '2. 실전 AI 문제 풀이 (15문항)'}
             {currentStep === 3 && '3. AI 실무 역량 자가진단 (20문항)'}
             {currentStep === 4 && '4. AI 업무 성향 진단 (24문항)'}
@@ -1143,14 +1145,19 @@ export const SurveyView: React.FC<SurveyViewProps> = ({
         </div>
       )}
 
-      {/* Step 1: AI 사용 현황 (U01~U05) */}
+      {/* Step 1: AI 사용 현황 (U01~U10) */}
       {currentStep === 1 && (
         <div className="bg-white border border-slate-200 rounded-2xl p-6 sm:p-8 shadow-sm space-y-8">
-          <div className="space-y-1">
-            <h2 className="text-xl font-bold text-slate-900">1. AI 도구 사용 현황 조사</h2>
-            <p className="text-xs text-slate-500">
-              현재 일상 업무에서 사용하고 계신 생성형 AI 도구와 활용 방식을 파악합니다.
-            </p>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div className="space-y-1">
+              <h2 className="text-xl font-bold text-slate-900">1. AI 도구 사용 현황 조사 (U01 ~ U10)</h2>
+              <p className="text-xs text-slate-500">
+                현재 일상 업무에서 사용하고 계신 생성형 AI 도구, 프롬프트 방식 및 활용 환경을 파악합니다.
+              </p>
+            </div>
+            <div className="text-xs font-semibold text-blue-700 bg-blue-50 px-3.5 py-1.5 rounded-full border border-blue-200/80 self-start sm:self-auto tabular-nums">
+              총 {USAGE_QUESTIONS.length}문항 + 직접입력
+            </div>
           </div>
 
           <div className="space-y-6">
@@ -1763,9 +1770,9 @@ export const SurveyView: React.FC<SurveyViewProps> = ({
             </div>
 
             <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
-              <div className="font-semibold text-slate-900">문항 응답 완료 현황 (총 72문항)</div>
+              <div className="font-semibold text-slate-900">문항 응답 완료 현황 (총 74문항)</div>
               <div className="space-y-1 text-slate-600">
-                <div>1. AI 사용 현황: <span className="text-emerald-700 font-semibold">8문항 전원 완료</span></div>
+                <div>1. AI 사용 현황: <span className="text-emerald-700 font-semibold">10문항 (U01~U10) 완료</span></div>
                 <div>2. 실전 AI 문제 풀이: <span className="text-blue-700 font-semibold">15문항 풀이 완료 (즉시 해설 제공)</span></div>
                 <div>3. AI 실무 역량: <span className="text-emerald-700 font-semibold">20문항 전원 완료</span></div>
                 <div>4. AI 업무 성향: <span className="text-emerald-700 font-semibold">24문항 전원 완료</span></div>

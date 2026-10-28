@@ -111,6 +111,30 @@ export const USAGE_QUESTIONS: UsageQuestion[] = [
       { value: 'SECURITY_COMPLIANCE', label: '안전한 AI 활용을 위한 정보보안 및 개인정보 보호 교육' },
     ],
   },
+  {
+    id: 'U09',
+    title: '업무 중 AI에게 질문(프롬프트)을 입력할 때 주로 어떤 방식으로 작성하십니까?',
+    type: 'single',
+    options: [
+      { value: 'SIMPLE_KEYWORD', label: '짧은 단어나 한 줄 질문 위주로 단순하게 입력함' },
+      { value: 'CONTEXT_ROLE', label: '역할·배경 맥락·출력 형식(표/목록 등)을 구체적으로 지정하여 입력함' },
+      { value: 'FILE_UPLOAD', label: '엑셀·PDF·이미지 파일을 직접 첨부하여 데이터 요약 및 분석을 지시함' },
+      { value: 'SAVED_TEMPLATE', label: '자주 쓰는 나만의 프롬프트 템플릿이나 맞춤 지침(GPTs 등)을 저장해 두고 활용함' },
+      { value: 'RARELY_PROMPT', label: '직접 프롬프트를 작성하기보다 동료가 만든 결과물이나 기본 기능만 간헐적으로 참고함' },
+    ],
+  },
+  {
+    id: 'U10',
+    title: 'AI가 생성한 답변이나 결과물을 실제 업무(고객 안내, 보고서, 매장 운영 등)에 반영할 때 어떻게 활용하십니까?',
+    type: 'single',
+    options: [
+      { value: 'THOROUGH_EDIT', label: '사실관계·수치·보안 규정을 직접 교차 검증하고, 매장/부서 실정에 맞게 수정·가공하여 반영함' },
+      { value: 'MINOR_EDIT', label: '전체적인 문맥만 가볍게 읽어보고 어색한 표현 정도만 다듬어서 바로 사용함' },
+      { value: 'IDEA_REFERENCE', label: '결과물을 그대로 쓰지 않고, 초기 기획 아이디어나 초안 참고용으로만 활용함' },
+      { value: 'DIRECT_USE', label: 'AI의 답변을 별도의 수정이나 팩트체크 없이 원문 그대로 복사하여 사용함' },
+      { value: 'NOT_APPLIED', label: '아직 실제 업무 결과물이나 고객 응대에는 반영해 본 적이 없음' },
+    ],
+  },
 ];
 
 // ==========================================
