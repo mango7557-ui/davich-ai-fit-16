@@ -10,6 +10,7 @@ export interface Company {
   managerPassword?: string; // 기업별 관리자 비밀번호
   contactEmail?: string;
   allowedDepartments: string[];
+  allowedPositions?: string[]; // 직책/직급 목록
   active: boolean;
   createdAt: string;
   targetRespondentCount?: number;

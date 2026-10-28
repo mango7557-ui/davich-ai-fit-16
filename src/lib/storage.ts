@@ -12,12 +12,72 @@ import { evaluateAssessmentScores, calculateAutomationPriority } from './assessm
 
 const STORAGE_KEY = 'davich_ai_fit16_store_v1';
 
+export const DEFAULT_STORE_POSITIONS: string[] = [
+  '원장',
+  '점장',
+  '부점장',
+  '수석안경사',
+  '책임안경사',
+  '안경사',
+  '팀장',
+  '파트장',
+  '매니저',
+  '주임',
+  '사원',
+];
+
+export const DEFAULT_HQ_POSITIONS: string[] = [
+  '임원/본부장',
+  '팀장/부서장',
+  '수석/부장',
+  '책임/차장',
+  '선임/과장',
+  '대리',
+  '주임',
+  '사원',
+];
+
+export const DEFAULT_GLOBAL_DEPARTMENTS: string[] = [
+  '안경사 1팀 (시력검사)',
+  '안경사 2팀 (콘택트/가공)',
+  '전문검안팀',
+  '콘택트렌즈팀',
+  '조제가공실',
+  '고객서비스팀',
+  '매장영업팀',
+  '경영지원팀',
+  '마케팅전략팀',
+  '가맹운영팀',
+  '교육개발팀',
+  'IT혁신팀',
+];
+
+export const DEFAULT_GLOBAL_POSITIONS: string[] = [
+  '원장',
+  '점장',
+  '부점장',
+  '수석안경사',
+  '책임안경사',
+  '안경사',
+  '팀장',
+  '파트장',
+  '매니저',
+  '부장',
+  '차장',
+  '과장',
+  '대리',
+  '주임',
+  '사원',
+];
+
 export interface StorageState {
   companies: Company[];
   submissions: AssessmentSubmission[];
   assignments: TrainingAssignment[];
   automationTasks: AutomationTask[];
   registeredStaff?: PreRegisteredStaff[];
+  globalDepartments?: string[];
+  globalPositions?: string[];
 }
 
 export const INITIAL_COMPANIES: Company[] = [
@@ -31,6 +91,7 @@ export const INITIAL_COMPANIES: Company[] = [
     managerPassword: '1234',
     contactEmail: 'gangnam@davichstore.com',
     allowedDepartments: ['안경사 1팀 (시력검사)', '안경사 2팀 (콘택트/가공)', '고객서비스팀', '매장영업팀'],
+    allowedPositions: DEFAULT_STORE_POSITIONS,
     active: true,
     targetRespondentCount: 15,
     createdAt: '2026-10-15T09:00:00.000Z',
@@ -45,6 +106,7 @@ export const INITIAL_COMPANIES: Company[] = [
     managerPassword: '1234',
     contactEmail: 'hq@davich.com',
     allowedDepartments: ['경영지원팀', '마케팅전략팀', '가맹운영팀', '교육개발팀', 'IT혁신팀'],
+    allowedPositions: DEFAULT_HQ_POSITIONS,
     active: true,
     targetRespondentCount: 45,
     createdAt: '2026-10-10T09:00:00.000Z',
@@ -59,6 +121,7 @@ export const INITIAL_COMPANIES: Company[] = [
     managerPassword: '1234',
     contactEmail: 'daechi@davichstore.com',
     allowedDepartments: ['전문검안팀', '콘택트렌즈팀', '조제가공실'],
+    allowedPositions: DEFAULT_STORE_POSITIONS,
     active: true,
     targetRespondentCount: 12,
     createdAt: '2026-10-11T10:00:00.000Z',
@@ -73,6 +136,7 @@ export const INITIAL_COMPANIES: Company[] = [
     managerPassword: '1234',
     contactEmail: 'myeongdong@davichstore.com',
     allowedDepartments: ['안경사팀 (시력검사)', '콘택트렌즈팀', '고객만족팀', '조제가공실'],
+    allowedPositions: DEFAULT_STORE_POSITIONS,
     active: true,
     targetRespondentCount: 18,
     createdAt: '2026-10-18T09:00:00.000Z',
@@ -85,6 +149,8 @@ const DEFAULT_STATE: StorageState = {
   assignments: [],
   automationTasks: [],
   registeredStaff: [],
+  globalDepartments: DEFAULT_GLOBAL_DEPARTMENTS,
+  globalPositions: DEFAULT_GLOBAL_POSITIONS,
 };
 
 type Listener = (state: StorageState) => void;
@@ -109,9 +175,22 @@ export function getStoredState(): StorageState {
       return DEFAULT_STATE;
     }
     const parsed = JSON.parse(raw);
-    const comps = Array.isArray(parsed.companies) && parsed.companies.length > 0
+    const comps = (Array.isArray(parsed.companies) && parsed.companies.length > 0
       ? parsed.companies
-      : INITIAL_COMPANIES;
+      : INITIAL_COMPANIES
+    ).map((c: Company) => ({
+      ...c,
+      allowedDepartments:
+        Array.isArray(c.allowedDepartments) && c.allowedDepartments.length > 0
+          ? c.allowedDepartments
+          : ['안경사팀', '고객서비스팀', '조제가공실'],
+      allowedPositions:
+        Array.isArray(c.allowedPositions) && c.allowedPositions.length > 0
+          ? c.allowedPositions
+          : c.category === 'HQ'
+          ? DEFAULT_HQ_POSITIONS
+          : DEFAULT_STORE_POSITIONS,
+    }));
 
     return {
       companies: comps,
@@ -119,6 +198,14 @@ export function getStoredState(): StorageState {
       assignments: Array.isArray(parsed.assignments) ? parsed.assignments : [],
       automationTasks: Array.isArray(parsed.automationTasks) ? parsed.automationTasks : [],
       registeredStaff: Array.isArray(parsed.registeredStaff) ? parsed.registeredStaff : [],
+      globalDepartments:
+        Array.isArray(parsed.globalDepartments) && parsed.globalDepartments.length > 0
+          ? parsed.globalDepartments
+          : DEFAULT_GLOBAL_DEPARTMENTS,
+      globalPositions:
+        Array.isArray(parsed.globalPositions) && parsed.globalPositions.length > 0
+          ? parsed.globalPositions
+          : DEFAULT_GLOBAL_POSITIONS,
     };
   } catch (err) {
     console.error('Failed to parse localStorage data:', err);
@@ -173,6 +260,31 @@ export function updateCompany(id: string, updates: Partial<Company>): Company | 
     companies: updatedCompanies,
   });
   return updatedCompany;
+}
+
+export function updateGlobalOrgConfig(
+  departments: string[],
+  positions: string[],
+  applyToAllCompanies: boolean = false
+) {
+  const state = getStoredState();
+  const cleanDepts = departments.map((d) => d.trim()).filter(Boolean);
+  const cleanPositions = positions.map((p) => p.trim()).filter(Boolean);
+
+  const updatedCompanies = applyToAllCompanies
+    ? state.companies.map((c) => ({
+        ...c,
+        allowedDepartments: Array.from(new Set([...c.allowedDepartments, ...cleanDepts])),
+        allowedPositions: Array.from(new Set([...(c.allowedPositions || []), ...cleanPositions])),
+      }))
+    : state.companies;
+
+  saveState({
+    ...state,
+    globalDepartments: cleanDepts.length > 0 ? cleanDepts : DEFAULT_GLOBAL_DEPARTMENTS,
+    globalPositions: cleanPositions.length > 0 ? cleanPositions : DEFAULT_GLOBAL_POSITIONS,
+    companies: updatedCompanies,
+  });
 }
 
 export function deleteCompany(id: string): boolean {

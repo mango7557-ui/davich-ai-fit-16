@@ -349,8 +349,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                     링크 관리자 ID: <strong className="text-blue-700 font-mono">{currentCompany.managerId || currentCompany.code}</strong>
                   </span>
                   <span>
-                    부서 구성: <strong className="text-slate-700">{currentCompany.allowedDepartments.join(', ')}</strong>
+                    부서/팀 구성: <strong className="text-slate-700">{currentCompany.allowedDepartments.join(', ')}</strong>
                   </span>
+                  {currentCompany.allowedPositions && currentCompany.allowedPositions.length > 0 && (
+                    <span>
+                      직책/직급 구성: <strong className="text-slate-700">{currentCompany.allowedPositions.join(', ')}</strong>
+                    </span>
+                  )}
                 </div>
                 {/* Dedicated Link Quick Copy Bar for this company section */}
                 <div className="pt-1 flex flex-wrap items-center gap-2">
@@ -1234,14 +1239,28 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               </div>
 
               <div>
-                <label className="block text-slate-700 font-semibold mb-1">직책</label>
-                <input
-                  type="text"
-                  placeholder="예: 안경사, 점장, 주임"
-                  value={newStaffPosition}
-                  onChange={(e) => setNewStaffPosition(e.target.value)}
-                  className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-1 focus:ring-blue-500"
-                />
+                <label className="block text-slate-700 font-semibold mb-1">직책 / 직급</label>
+                {currentCompany.allowedPositions && currentCompany.allowedPositions.length > 0 ? (
+                  <select
+                    value={newStaffPosition}
+                    onChange={(e) => setNewStaffPosition(e.target.value)}
+                    className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white"
+                  >
+                    {currentCompany.allowedPositions.map((p) => (
+                      <option key={p} value={p}>
+                        {p}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <input
+                    type="text"
+                    placeholder="예: 안경사, 점장, 주임"
+                    value={newStaffPosition}
+                    onChange={(e) => setNewStaffPosition(e.target.value)}
+                    className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  />
+                )}
               </div>
 
               <div className="pt-2 flex items-center gap-2">

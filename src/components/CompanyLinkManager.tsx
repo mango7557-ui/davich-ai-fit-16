@@ -19,7 +19,17 @@ import {
   Clock,
 } from 'lucide-react';
 import { Company, CompanyCategory, AdminUser } from '../types/davich';
-import { addCompany, deleteCompany, updateCompany } from '../lib/storage';
+import {
+  addCompany,
+  deleteCompany,
+  updateCompany,
+  getStoredState,
+  updateGlobalOrgConfig,
+  DEFAULT_STORE_POSITIONS,
+  DEFAULT_HQ_POSITIONS,
+  DEFAULT_GLOBAL_DEPARTMENTS,
+  DEFAULT_GLOBAL_POSITIONS,
+} from '../lib/storage';
 import { generateCompanyThumbnailDataUrl } from '../lib/thumbnailGenerator';
 import { CompanyAdminLoginModal } from './CompanyAdminLoginModal';
 import { KakaoShareModal } from './KakaoShareModal';
@@ -56,6 +66,105 @@ export const CompanyLinkManager: React.FC<CompanyLinkManagerProps> = ({
   const [editManagerPassword, setEditManagerPassword] = useState('');
   const [editTargetCount, setEditTargetCount] = useState<number>(20);
   const [editDeptInput, setEditDeptInput] = useState('');
+  const [editPosInput, setEditPosInput] = useState('');
+
+  // Department / Team & Position / Rank Management Modal state (Master Admin)
+  const [showOrgModal, setShowOrgModal] = useState(false);
+  const [orgTargetCompanyId, setOrgTargetCompanyId] = useState<string>('GLOBAL');
+  const [orgDepartments, setOrgDepartments] = useState<string[]>([]);
+  const [orgPositions, setOrgPositions] = useState<string[]>([]);
+  const [newDeptItem, setNewDeptItem] = useState('');
+  const [newPosItem, setNewPosItem] = useState('');
+  const [applyGlobalToAll, setApplyGlobalToAll] = useState(true);
+  const [orgSavedNotice, setOrgSavedNotice] = useState<string | null>(null);
+
+  const openOrgManager = (targetId: string = 'GLOBAL') => {
+    const state = getStoredState();
+    setOrgTargetCompanyId(targetId);
+    if (targetId === 'GLOBAL') {
+      setOrgDepartments(state.globalDepartments || DEFAULT_GLOBAL_DEPARTMENTS);
+      setOrgPositions(state.globalPositions || DEFAULT_GLOBAL_POSITIONS);
+    } else {
+      const comp = companies.find((c) => c.id === targetId);
+      if (comp) {
+        setOrgDepartments(comp.allowedDepartments || []);
+        setOrgPositions(comp.allowedPositions || DEFAULT_STORE_POSITIONS);
+      }
+    }
+    setNewDeptItem('');
+    setNewPosItem('');
+    setOrgSavedNotice(null);
+    setShowOrgModal(true);
+  };
+
+  const handleOrgTargetChange = (targetId: string) => {
+    const state = getStoredState();
+    setOrgTargetCompanyId(targetId);
+    if (targetId === 'GLOBAL') {
+      setOrgDepartments(state.globalDepartments || DEFAULT_GLOBAL_DEPARTMENTS);
+      setOrgPositions(state.globalPositions || DEFAULT_GLOBAL_POSITIONS);
+    } else {
+      const comp = companies.find((c) => c.id === targetId);
+      if (comp) {
+        setOrgDepartments(comp.allowedDepartments || []);
+        setOrgPositions(comp.allowedPositions || DEFAULT_STORE_POSITIONS);
+      }
+    }
+  };
+
+  const handleAddOrgDept = () => {
+    const val = newDeptItem.trim();
+    if (!val) return;
+    if (!orgDepartments.includes(val)) {
+      setOrgDepartments([...orgDepartments, val]);
+    }
+    setNewDeptItem('');
+  };
+
+  const handleRemoveOrgDept = (dept: string) => {
+    setOrgDepartments(orgDepartments.filter((d) => d !== dept));
+  };
+
+  const handleAddOrgPos = () => {
+    const val = newPosItem.trim();
+    if (!val) return;
+    if (!orgPositions.includes(val)) {
+      setOrgPositions([...orgPositions, val]);
+    }
+    setNewPosItem('');
+  };
+
+  const handleRemoveOrgPos = (pos: string) => {
+    setOrgPositions(orgPositions.filter((p) => p !== pos));
+  };
+
+  const handleSaveOrgModal = (e: React.FormEvent) => {
+    e.preventDefault();
+    const finalDepts = orgDepartments.length > 0 ? orgDepartments : ['기본 부서'];
+    const finalPositions = orgPositions.length > 0 ? orgPositions : ['사원'];
+
+    if (orgTargetCompanyId === 'GLOBAL') {
+      updateGlobalOrgConfig(finalDepts, finalPositions, applyGlobalToAll);
+      setDeptInput(finalDepts.join(', '));
+      setPosInput(finalPositions.join(', '));
+      setOrgSavedNotice(
+        applyGlobalToAll
+          ? '전사 표준 부서/팀 및 직책/직급이 저장되고 모든 기업에 반영되었습니다.'
+          : '전사 표준 부서/팀 및 직책/직급 기본값이 저장되었습니다.'
+      );
+    } else {
+      updateCompany(orgTargetCompanyId, {
+        allowedDepartments: finalDepts,
+        allowedPositions: finalPositions,
+      });
+      const comp = companies.find((c) => c.id === orgTargetCompanyId);
+      setOrgSavedNotice(`[${comp?.name || '기업'}]의 소속 부서/팀 및 직책/직급 구성이 저장되었습니다.`);
+    }
+    setTimeout(() => {
+      setOrgSavedNotice(null);
+      setShowOrgModal(false);
+    }, 1200);
+  };
 
   const handleOpenEditModal = (comp: Company) => {
     setEditingCompany(comp);
@@ -65,6 +174,7 @@ export const CompanyLinkManager: React.FC<CompanyLinkManagerProps> = ({
     setEditManagerPassword(comp.managerPassword || '1234');
     setEditTargetCount(comp.targetRespondentCount || 20);
     setEditDeptInput(comp.allowedDepartments.join(', '));
+    setEditPosInput((comp.allowedPositions || DEFAULT_STORE_POSITIONS).join(', '));
   };
 
   const handleSaveEditCompany = (e: React.FormEvent) => {
@@ -75,6 +185,10 @@ export const CompanyLinkManager: React.FC<CompanyLinkManagerProps> = ({
       .split(',')
       .map((d) => d.trim())
       .filter(Boolean);
+    const positions = editPosInput
+      .split(',')
+      .map((p) => p.trim())
+      .filter(Boolean);
 
     updateCompany(editingCompany.id, {
       name: editName.trim(),
@@ -83,6 +197,7 @@ export const CompanyLinkManager: React.FC<CompanyLinkManagerProps> = ({
       managerPassword: editManagerPassword.trim(),
       targetRespondentCount: editTargetCount > 0 ? editTargetCount : 20,
       allowedDepartments: depts.length > 0 ? depts : ['기본 부서'],
+      allowedPositions: positions.length > 0 ? positions : DEFAULT_STORE_POSITIONS,
     });
     setEditingCompany(null);
   };
@@ -96,7 +211,8 @@ export const CompanyLinkManager: React.FC<CompanyLinkManagerProps> = ({
   const [managerPassword, setManagerPassword] = useState('1234');
   const [contactEmail, setContactEmail] = useState('');
   const [targetCount, setTargetCount] = useState<number>(20);
-  const [deptInput, setDeptInput] = useState('안경사팀, 고객서비스팀, 조제가공실');
+  const [deptInput, setDeptInput] = useState('안경사 1팀 (시력검사), 안경사 2팀 (콘택트/가공), 고객서비스팀, 조제가공실');
+  const [posInput, setPosInput] = useState(DEFAULT_STORE_POSITIONS.join(', '));
 
   // Auto-generate code from name
   const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -125,6 +241,10 @@ export const CompanyLinkManager: React.FC<CompanyLinkManagerProps> = ({
       .split(',')
       .map((d) => d.trim())
       .filter(Boolean);
+    const positions = posInput
+      .split(',')
+      .map((p) => p.trim())
+      .filter(Boolean);
 
     addCompany({
       name: name.trim(),
@@ -135,6 +255,7 @@ export const CompanyLinkManager: React.FC<CompanyLinkManagerProps> = ({
       managerPassword: managerPassword.trim() || '1234',
       contactEmail: contactEmail.trim() || undefined,
       allowedDepartments: depts.length > 0 ? depts : ['기본 부서'],
+      allowedPositions: positions.length > 0 ? positions : DEFAULT_STORE_POSITIONS,
       targetRespondentCount: targetCount > 0 ? targetCount : 20,
       active: true,
     });
@@ -237,13 +358,24 @@ export const CompanyLinkManager: React.FC<CompanyLinkManagerProps> = ({
 
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 shrink-0">
             {isMasterAdmin ? (
-              <button
-                onClick={() => setShowModal(true)}
-                className="px-5 py-2.5 rounded-xl font-medium text-sm text-white bg-blue-600 hover:bg-blue-500 active:bg-blue-700 transition-colors shadow-sm flex items-center justify-center gap-2 whitespace-nowrap cursor-pointer"
-              >
-                <Plus className="w-4 h-4" />
-                <span>새 기업 등록 & 링크 생성</span>
-              </button>
+              <>
+                <button
+                  type="button"
+                  onClick={() => openOrgManager('GLOBAL')}
+                  className="px-4 py-2.5 rounded-xl font-semibold text-sm text-slate-800 bg-slate-100 hover:bg-slate-200 border border-slate-200 transition-colors shadow-2xs flex items-center justify-center gap-2 whitespace-nowrap cursor-pointer"
+                >
+                  <Building2 className="w-4 h-4 text-blue-600" />
+                  <span>소속 부서/팀 · 직책/직급 관리</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowModal(true)}
+                  className="px-5 py-2.5 rounded-xl font-medium text-sm text-white bg-blue-600 hover:bg-blue-500 active:bg-blue-700 transition-colors shadow-sm flex items-center justify-center gap-2 whitespace-nowrap cursor-pointer"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>새 기업 등록 & 링크 생성</span>
+                </button>
+              </>
             ) : (
               <div className="px-4 py-2.5 rounded-xl bg-blue-50 border border-blue-200 text-blue-800 text-xs font-bold flex items-center gap-2">
                 <Shield className="w-4 h-4 text-blue-600" />
@@ -415,9 +547,29 @@ export const CompanyLinkManager: React.FC<CompanyLinkManagerProps> = ({
                     )}
                   </div>
 
-                  {/* Allowed departments */}
-                  <div className="mt-2 text-xs text-slate-400 truncate">
-                    부서 구성: {company.allowedDepartments.join(', ')}
+                  {/* Allowed departments & positions */}
+                  <div className="mt-2.5 p-2.5 rounded-xl bg-slate-50 border border-slate-100 space-y-1.5 text-xs">
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="text-slate-600 truncate">
+                        <span className="font-semibold text-slate-700">부서/팀 ({company.allowedDepartments.length}):</span>{' '}
+                        {company.allowedDepartments.join(', ')}
+                      </div>
+                      {isMasterAdmin && (
+                        <button
+                          type="button"
+                          onClick={() => openOrgManager(company.id)}
+                          className="text-[11px] px-2 py-0.5 rounded bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 font-semibold shrink-0 cursor-pointer transition-colors"
+                        >
+                          부서·직급 관리
+                        </button>
+                      )}
+                    </div>
+                    <div className="text-slate-500 truncate text-[11px]">
+                      <span className="font-semibold text-slate-700">
+                        직책/직급 ({(company.allowedPositions || DEFAULT_STORE_POSITIONS).length}):
+                      </span>{' '}
+                      {(company.allowedPositions || DEFAULT_STORE_POSITIONS).join(', ')}
+                    </div>
                   </div>
 
                   {/* Manager Login Credentials Badge (ONLY visible to Master Admin) */}
@@ -660,7 +812,7 @@ export const CompanyLinkManager: React.FC<CompanyLinkManagerProps> = ({
 
               <div>
                 <label className="block text-slate-700 font-semibold mb-1">
-                  부서/팀 목록 (쉼표로 구분)
+                  소속 부서/팀 목록 (쉼표로 구분)
                 </label>
                 <input
                   type="text"
@@ -670,7 +822,23 @@ export const CompanyLinkManager: React.FC<CompanyLinkManagerProps> = ({
                   className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
                 />
                 <p className="text-[11px] text-slate-400 mt-1">
-                  직원이 설문 작성 시 소속 부서를 간편하게 선택할 수 있는 드롭다운 목록이 됩니다.
+                  직원이 설문 작성 시 소속 부서/팀을 선택할 수 있는 드롭다운 목록입니다.
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-slate-700 font-semibold mb-1">
+                  직책/직급 목록 (쉼표로 구분)
+                </label>
+                <input
+                  type="text"
+                  placeholder="예: 원장, 점장, 부점장, 수석안경사, 안경사, 팀장, 매니저, 사원"
+                  value={posInput}
+                  onChange={(e) => setPosInput(e.target.value)}
+                  className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                />
+                <p className="text-[11px] text-slate-400 mt-1">
+                  직원이 설문 작성 시 직책/직급을 선택할 수 있는 드롭다운 목록입니다.
                 </p>
               </div>
 
@@ -932,12 +1100,24 @@ export const CompanyLinkManager: React.FC<CompanyLinkManagerProps> = ({
 
               <div>
                 <label className="block text-slate-700 font-semibold mb-1">
-                  부서/팀 목록 (쉼표로 구분)
+                  소속 부서/팀 목록 (쉼표로 구분)
                 </label>
                 <input
                   type="text"
                   value={editDeptInput}
                   onChange={(e) => setEditDeptInput(e.target.value)}
+                  className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-slate-700 font-semibold mb-1">
+                  직책/직급 목록 (쉼표로 구분)
+                </label>
+                <input
+                  type="text"
+                  value={editPosInput}
+                  onChange={(e) => setEditPosInput(e.target.value)}
                   className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
                 />
               </div>
@@ -969,6 +1149,250 @@ export const CompanyLinkManager: React.FC<CompanyLinkManagerProps> = ({
                   className="px-5 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-semibold shadow-sm transition-colors cursor-pointer"
                 >
                   저장하기
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: Master Admin Department / Team & Position / Rank Management */}
+      {showOrgModal && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-white border border-slate-200 rounded-2xl max-w-2xl w-full p-6 sm:p-7 shadow-2xl space-y-5 animate-in fade-in zoom-in-95 my-8">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+              <div className="flex items-center gap-3">
+                <img
+                  src="assets/aistudio/___-_ceodavich_final_clean_da550648.png"
+                  alt="다비치안경 로고"
+                  className="w-9 h-9 rounded-xl object-contain shadow-2xs shrink-0"
+                />
+                <div>
+                  <h3 className="text-lg font-bold text-slate-900">
+                    소속 부서/팀 & 직책/직급 추가 · 통합 관리
+                  </h3>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    마스터 관리자 전용 · 전사 기본값 또는 기업별 부서/팀과 직책/직급 항목을 자유롭게 추가·삭제합니다.
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowOrgModal(false)}
+                className="text-slate-400 hover:text-slate-600 text-lg p-1 cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            {orgSavedNotice && (
+              <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-900 text-xs flex items-center gap-2 font-semibold">
+                <Check className="w-4 h-4 text-emerald-600 shrink-0" />
+                <span>{orgSavedNotice}</span>
+              </div>
+            )}
+
+            <form onSubmit={handleSaveOrgModal} className="space-y-5 text-xs">
+              {/* Target Selector: Global vs Specific Company */}
+              <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
+                <label className="block text-slate-800 font-bold">
+                  관리 대상 선택 (전사 표준 또는 개별 기업/매장)
+                </label>
+                <select
+                  value={orgTargetCompanyId}
+                  onChange={(e) => handleOrgTargetChange(e.target.value)}
+                  className="w-full px-3 py-2 text-sm font-semibold border border-slate-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                >
+                  <option value="GLOBAL">🌐 전사 표준 기본값 설정 (신규 기업 기본값 & 전체 일괄 적용)</option>
+                  {companies.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      🏢 {c.name} (/{c.code}) — 부서 {c.allowedDepartments.length}개 / 직급 {(c.allowedPositions || DEFAULT_STORE_POSITIONS).length}개
+                    </option>
+                  ))}
+                </select>
+                {orgTargetCompanyId === 'GLOBAL' && (
+                  <label className="flex items-center gap-2 pt-1 text-slate-700 font-medium cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={applyGlobalToAll}
+                      onChange={(e) => setApplyGlobalToAll(e.target.checked)}
+                      className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                    />
+                    <span>저장 시 현재 등록된 모든 기업({companies.length}개)에도 추가된 부서/팀 및 직책/직급 반영</span>
+                  </label>
+                )}
+              </div>
+
+              {/* Section 1: 소속 부서 / 팀 추가 및 관리 */}
+              <div className="p-4 rounded-2xl border border-blue-200 bg-blue-50/40 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="font-bold text-blue-950 text-sm flex items-center gap-2">
+                    <span>1. 소속 부서 / 팀 관리</span>
+                    <span className="text-[11px] bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full font-mono">
+                      총 {orgDepartments.length}개
+                    </span>
+                  </div>
+                </div>
+
+                {/* Add new department input */}
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    placeholder="추가할 부서명 또는 팀명 입력 (예: 전문검안팀, 온라인마케팅팀)"
+                    value={newDeptItem}
+                    onChange={(e) => setNewDeptItem(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        handleAddOrgDept();
+                      }
+                    }}
+                    className="flex-1 px-3 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleAddOrgDept}
+                    className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl flex items-center gap-1 shrink-0 cursor-pointer shadow-2xs"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>부서/팀 추가</span>
+                  </button>
+                </div>
+
+                {/* Quick preset chips for departments */}
+                <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
+                  <span className="text-[11px] text-slate-500 mr-1">빠른 추가:</span>
+                  {['안경사 1팀 (시력검사)', '안경사 2팀 (콘택트/가공)', '전문검안팀', '콘택트렌즈팀', '조제가공실', '고객서비스(CS)팀', '매장영업팀', '경영지원팀', '마케팅전략팀', '가맹운영팀', '교육개발팀', 'IT혁신팀'].map((preset) => (
+                    <button
+                      key={preset}
+                      type="button"
+                      onClick={() => {
+                        if (!orgDepartments.includes(preset)) {
+                          setOrgDepartments([...orgDepartments, preset]);
+                        }
+                      }}
+                      className="text-[11px] px-2 py-0.5 rounded-md bg-white hover:bg-blue-100 text-slate-600 hover:text-blue-800 border border-slate-200 transition-colors cursor-pointer"
+                    >
+                      + {preset}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Current department tags */}
+                <div className="flex flex-wrap gap-2 pt-2 border-t border-blue-100">
+                  {orgDepartments.map((dept) => (
+                    <span
+                      key={dept}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white border border-blue-200 text-slate-800 font-semibold text-xs shadow-2xs"
+                    >
+                      <span>{dept}</span>
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveOrgDept(dept)}
+                        className="text-slate-400 hover:text-rose-600 font-bold ml-0.5 cursor-pointer"
+                        title="부서/팀 삭제"
+                      >
+                        ✕
+                      </button>
+                    </span>
+                  ))}
+                  {orgDepartments.length === 0 && (
+                    <span className="text-slate-400 text-xs py-1">등록된 부서/팀이 없습니다. 위 입력창에서 추가해 주세요.</span>
+                  )}
+                </div>
+              </div>
+
+              {/* Section 2: 직책 / 직급 추가 및 관리 */}
+              <div className="p-4 rounded-2xl border border-indigo-200 bg-indigo-50/40 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="font-bold text-indigo-950 text-sm flex items-center gap-2">
+                    <span>2. 직책 / 직급 관리</span>
+                    <span className="text-[11px] bg-indigo-100 text-indigo-800 px-2 py-0.5 rounded-full font-mono">
+                      총 {orgPositions.length}개
+                    </span>
+                  </div>
+                </div>
+
+                {/* Add new position input */}
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    placeholder="추가할 직책 또는 직급 입력 (예: 원장, 점장, 수석안경사, 팀장, 매니저)"
+                    value={newPosItem}
+                    onChange={(e) => setNewPosItem(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        handleAddOrgPos();
+                      }
+                    }}
+                    className="flex-1 px-3 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleAddOrgPos}
+                    className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl flex items-center gap-1 shrink-0 cursor-pointer shadow-2xs"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>직책/직급 추가</span>
+                  </button>
+                </div>
+
+                {/* Quick preset chips for positions */}
+                <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
+                  <span className="text-[11px] text-slate-500 mr-1">빠른 추가:</span>
+                  {['원장', '점장', '부점장', '수석안경사', '책임안경사', '안경사', '팀장', '파트장', '매니저', '본부장', '부장', '차장', '과장', '대리', '주임', '사원'].map((preset) => (
+                    <button
+                      key={preset}
+                      type="button"
+                      onClick={() => {
+                        if (!orgPositions.includes(preset)) {
+                          setOrgPositions([...orgPositions, preset]);
+                        }
+                      }}
+                      className="text-[11px] px-2 py-0.5 rounded-md bg-white hover:bg-indigo-100 text-slate-600 hover:text-indigo-800 border border-slate-200 transition-colors cursor-pointer"
+                    >
+                      + {preset}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Current position tags */}
+                <div className="flex flex-wrap gap-2 pt-2 border-t border-indigo-100">
+                  {orgPositions.map((pos) => (
+                    <span
+                      key={pos}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white border border-indigo-200 text-slate-800 font-semibold text-xs shadow-2xs"
+                    >
+                      <span>{pos}</span>
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveOrgPos(pos)}
+                        className="text-slate-400 hover:text-rose-600 font-bold ml-0.5 cursor-pointer"
+                        title="직책/직급 삭제"
+                      >
+                        ✕
+                      </button>
+                    </span>
+                  ))}
+                  {orgPositions.length === 0 && (
+                    <span className="text-slate-400 text-xs py-1">등록된 직책/직급이 없습니다. 위 입력창에서 추가해 주세요.</span>
+                  )}
+                </div>
+              </div>
+
+              <div className="pt-3 border-t border-slate-100 flex items-center justify-end gap-2.5">
+                <button
+                  type="button"
+                  onClick={() => setShowOrgModal(false)}
+                  className="px-4 py-2 border border-slate-200 hover:bg-slate-50 text-slate-700 rounded-xl font-medium transition-colors cursor-pointer"
+                >
+                  취소
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-semibold shadow-sm transition-colors cursor-pointer"
+                >
+                  부서/팀 및 직책/직급 설정 저장
                 </button>
               </div>
             </form>

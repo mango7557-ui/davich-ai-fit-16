@@ -79,6 +79,8 @@ export const SurveyView: React.FC<SurveyViewProps> = ({
   const [employeeNumber, setEmployeeNumber] = useState('');
   const [department, setDepartment] = useState('');
   const [position, setPosition] = useState('');
+  const [isCustomDept, setIsCustomDept] = useState(false);
+  const [isCustomPos, setIsCustomPos] = useState(false);
   const [jobFunction, setJobFunction] = useState('');
   const [consentPrivacy, setConsentPrivacy] = useState(false);
   const [consentNoSensitive, setConsentNoSensitive] = useState(false);
@@ -123,6 +125,9 @@ export const SurveyView: React.FC<SurveyViewProps> = ({
         if (found.allowedDepartments && found.allowedDepartments.length > 0) {
           setDepartment((prev) => prev || found.allowedDepartments[0]);
         }
+        if (found.allowedPositions && found.allowedPositions.length > 0) {
+          setPosition((prev) => prev || found.allowedPositions![0]);
+        }
         setIsStarted(true); // Open survey questions directly
       }
     } else if (companies.length > 0 && !currentCompany) {
@@ -130,11 +135,17 @@ export const SurveyView: React.FC<SurveyViewProps> = ({
       if (companies[0].allowedDepartments && companies[0].allowedDepartments.length > 0) {
         setDepartment((prev) => prev || companies[0].allowedDepartments[0]);
       }
+      if (companies[0].allowedPositions && companies[0].allowedPositions.length > 0) {
+        setPosition((prev) => prev || companies[0].allowedPositions![0]);
+      }
     } else if (!currentCompany) {
       const fallback = INITIAL_COMPANIES[0];
       setCurrentCompany(fallback);
       if (fallback.allowedDepartments && fallback.allowedDepartments.length > 0) {
         setDepartment((prev) => prev || fallback.allowedDepartments[0]);
+      }
+      if (fallback.allowedPositions && fallback.allowedPositions.length > 0) {
+        setPosition((prev) => prev || fallback.allowedPositions![0]);
       }
     }
   }, [selectedCompanyCode, companies]);
@@ -996,10 +1007,26 @@ export const SurveyView: React.FC<SurveyViewProps> = ({
 
               {/* 소속 부서 / 팀 */}
               <div>
-                <label className="block text-slate-700 font-semibold mb-1">
-                  소속 부서 / 팀 <span className="text-rose-500">*</span>
-                </label>
-                {currentCompany?.allowedDepartments && currentCompany.allowedDepartments.length > 0 ? (
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block text-slate-700 font-semibold">
+                    소속 부서 / 팀 <span className="text-rose-500">*</span>
+                  </label>
+                  {currentCompany?.allowedDepartments && currentCompany.allowedDepartments.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsCustomDept(!isCustomDept);
+                        if (isCustomDept && currentCompany.allowedDepartments.length > 0) {
+                          setDepartment(currentCompany.allowedDepartments[0]);
+                        }
+                      }}
+                      className="text-[11px] text-blue-600 hover:underline font-medium cursor-pointer"
+                    >
+                      {isCustomDept ? '목록에서 선택' : '직접 입력'}
+                    </button>
+                  )}
+                </div>
+                {!isCustomDept && currentCompany?.allowedDepartments && currentCompany.allowedDepartments.length > 0 ? (
                   <select
                     value={department}
                     onChange={(e) => setDepartment(e.target.value)}
@@ -1017,23 +1044,53 @@ export const SurveyView: React.FC<SurveyViewProps> = ({
                     placeholder="예: 안경사 1팀"
                     value={department}
                     onChange={(e) => setDepartment(e.target.value)}
-                    className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl"
+                    className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
                   />
                 )}
               </div>
 
               {/* 직책 / 직급 */}
               <div>
-                <label className="block text-slate-700 font-semibold mb-1">
-                  직책 / 직급 <span className="text-rose-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  placeholder="예: 원장, 점장, 수석안경사, 팀장, 매니저"
-                  value={position}
-                  onChange={(e) => setPosition(e.target.value)}
-                  className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
-                />
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block text-slate-700 font-semibold">
+                    직책 / 직급 <span className="text-rose-500">*</span>
+                  </label>
+                  {currentCompany?.allowedPositions && currentCompany.allowedPositions.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsCustomPos(!isCustomPos);
+                        if (isCustomPos && currentCompany.allowedPositions && currentCompany.allowedPositions.length > 0) {
+                          setPosition(currentCompany.allowedPositions[0]);
+                        }
+                      }}
+                      className="text-[11px] text-blue-600 hover:underline font-medium cursor-pointer"
+                    >
+                      {isCustomPos ? '목록에서 선택' : '직접 입력'}
+                    </button>
+                  )}
+                </div>
+                {!isCustomPos && currentCompany?.allowedPositions && currentCompany.allowedPositions.length > 0 ? (
+                  <select
+                    value={position}
+                    onChange={(e) => setPosition(e.target.value)}
+                    className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                  >
+                    {currentCompany.allowedPositions.map((p) => (
+                      <option key={p} value={p}>
+                        {p}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <input
+                    type="text"
+                    placeholder="예: 원장, 점장, 수석안경사, 팀장, 매니저"
+                    value={position}
+                    onChange={(e) => setPosition(e.target.value)}
+                    className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                  />
+                )}
               </div>
 
               {/* 담당 주요 직무 */}
