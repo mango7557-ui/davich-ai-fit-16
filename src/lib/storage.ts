@@ -3,10 +3,10 @@ import {
   AssessmentSubmission,
   TrainingAssignment,
   AutomationTask,
-  AutomationStatus,
+  PreRegisteredStaff,
   AdminUser,
   MASTER_ADMIN_ACCOUNT,
-  PreRegisteredStaff,
+  MASTER_ADMIN_ACCOUNTS,
 } from '../types/davich';
 import { evaluateAssessmentScores, calculateAutomationPriority } from './assessmentEngine';
 
@@ -387,24 +387,28 @@ export function authenticateAdmin(
     return { success: false, message: '비밀번호를 입력해 주세요.' };
   }
 
-  // 1. Verify HQ Master Admin (본사 총괄 마스터 관리자: 한재환 / 1234)
-  const masterUser = MASTER_ADMIN_ACCOUNT.username.normalize('NFC').toLowerCase();
-  const masterPass = MASTER_ADMIN_ACCOUNT.password.normalize('NFC');
-  if (
-    (cleanUser.toLowerCase() === masterUser || cleanUser.replace(/\s+/g, '').toLowerCase() === masterUser) &&
-    cleanPass === masterPass
-  ) {
+  // 1. Verify HQ Master Admin (본사 총괄 마스터 관리자: 한재환 / 1234, 다비치 / 1234)
+  const matchedMaster = MASTER_ADMIN_ACCOUNTS.find((acc) => {
+    const mUser = acc.username.normalize('NFC').toLowerCase();
+    const mPass = acc.password.normalize('NFC');
+    return (
+      (cleanUser.toLowerCase() === mUser || cleanUser.replace(/\s+/g, '').toLowerCase() === mUser) &&
+      cleanPass === mPass
+    );
+  });
+
+  if (matchedMaster) {
     const user: AdminUser = {
-      id: 'master-admin',
-      username: MASTER_ADMIN_ACCOUNT.username,
-      name: MASTER_ADMIN_ACCOUNT.name,
+      id: `master-admin-${matchedMaster.username}`,
+      username: matchedMaster.username,
+      name: matchedMaster.name,
       role: 'MASTER',
     };
     saveAdminSession(user);
     return {
       success: true,
       user,
-      message: '본사 총괄 마스터 관리자(한재환)로 로그인되었습니다.',
+      message: `본사 총괄 마스터 관리자(${matchedMaster.username})로 로그인되었습니다.`,
     };
   }
 

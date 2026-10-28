@@ -31,6 +31,21 @@ export const MASTER_ADMIN_ACCOUNT = {
   role: 'MASTER' as const,
 };
 
+export const MASTER_ADMIN_ACCOUNTS = [
+  {
+    username: '한재환',
+    password: '1234',
+    name: '한재환 마스터 관리자',
+    role: 'MASTER' as const,
+  },
+  {
+    username: '다비치',
+    password: '1234',
+    name: '다비치 마스터 관리자',
+    role: 'MASTER' as const,
+  },
+];
+
 export interface RespondentProfile {
   name: string; // Acts as User ID
   password?: string; // Respondent password for resuming/editing
