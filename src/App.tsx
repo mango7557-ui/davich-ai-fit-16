@@ -16,6 +16,7 @@ import {
   getSavedRespondentSession,
   saveRespondentSession,
   isSubmissionForCompany,
+  syncFromCloud,
 } from './lib/storage';
 import { AssessmentSubmission, AdminUser, Company } from './types/davich';
 import { X, Lock } from 'lucide-react';
@@ -186,6 +187,10 @@ export default function App() {
   const handleLoginSuccess = (user: AdminUser) => {
     setAdminUser(user);
     saveAdminSession(user);
+    syncFromCloud().then((latestState) => {
+      setStore({ ...latestState });
+    });
+
     if (user.role === 'COMPANY_MANAGER' && user.companyId) {
       const comp = store.companies.find((c) => c.id === user.companyId);
       if (comp) {
@@ -194,8 +199,12 @@ export default function App() {
       }
       setSelectedAdminCompanyId(user.companyId);
       setActiveTab('ADMIN');
+    } else if (isDedicatedSurveyMode && dedicatedCompany) {
+      // If Master Admin logged in while on a specific company link (e.g. 다비치안경 본사 링크), open that company's participant management directly
+      setSelectedAdminCompanyId(dedicatedCompany.id);
+      setActiveTab('ADMIN');
     } else {
-      // Master Admin lands on HQ Company Link Creation & Management section
+      // Master Admin on main root screen lands on HQ Company Link Creation & Management section
       setActiveTab('LINKS');
     }
   };

@@ -51,6 +51,7 @@ import {
   deleteRegisteredStaff,
   getStoredState,
   isSubmissionForCompany,
+  syncFromCloud,
 } from '../lib/storage';
 import { KakaoShareModal } from './KakaoShareModal';
 
@@ -118,8 +119,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     ? adminUser.companyId
     : selectedCompanyId;
 
-  // Set active tab to STAFF whenever targetCompanyId changes to a specific company
+  // Set active tab to STAFF whenever targetCompanyId changes to a specific company & sync cloud submissions
   useEffect(() => {
+    syncFromCloud().then(() => {
+      refreshRegisteredStaff();
+    });
     if (targetCompanyId !== 'ALL') {
       setActiveTab('STAFF');
     }
@@ -674,6 +678,20 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   설문 대기 ({pendingStaff.length})
                 </button>
               </div>
+
+              <button
+                type="button"
+                onClick={async () => {
+                  await syncFromCloud();
+                  refreshRegisteredStaff();
+                  notify('실시간 클라우드 설문 응답 데이터가 최신 상태로 동기화되었습니다.');
+                }}
+                className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-colors"
+                title="스마트폰(카카오톡) 및 다른 기기에서 제출된 설문 응답 즉시 동기화"
+              >
+                <RotateCcw className="w-3.5 h-3.5 text-blue-600" />
+                <span>실시간 응답 동기화</span>
+              </button>
 
               {currentCompany && (
                 <button

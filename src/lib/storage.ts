@@ -12,6 +12,45 @@ import { evaluateAssessmentScores, calculateAutomationPriority } from './assessm
 import { QUIZ_QUESTIONS } from '../data/questionBank';
 
 const STORAGE_KEY = 'davich_ai_fit16_store_v1';
+const CLOUD_SYNC_TOPIC = 'davich_aifit16_cloud_sync_v3_prod';
+const CLOUD_SEEDED_KEY = 'davich_cloud_seeded_ids_v3';
+
+export type CloudSyncEvent =
+  | { type: 'SUBMISSION_UPSERT'; submission: AssessmentSubmission; ts: number }
+  | { type: 'SUBMISSION_DELETE'; id: string; ts: number }
+  | { type: 'COMPANY_UPSERT'; company: Company; ts: number }
+  | { type: 'COMPANY_DELETE'; id: string; ts: number }
+  | { type: 'STAFF_UPSERT'; staff: PreRegisteredStaff; ts: number }
+  | { type: 'STAFF_DELETE'; id: string; ts: number }
+  | { type: 'ORG_CONFIG'; departments: string[]; positions: string[]; applyToAll: boolean; ts: number };
+
+export function publishCloudEvent(event: CloudSyncEvent) {
+  if (typeof window === 'undefined') return;
+  try {
+    // Strip heavy redundant quizDetails array before sending so payload stays compact (<1.5KB)
+    let payloadToSend: any = event;
+    if (event.type === 'SUBMISSION_UPSERT' && event.submission?.scores?.quizDetails) {
+      payloadToSend = {
+        ...event,
+        submission: {
+          ...event.submission,
+          scores: {
+            ...event.submission.scores,
+            quizDetails: undefined,
+          },
+        },
+      };
+    }
+    fetch(`https://ntfy.sh/${CLOUD_SYNC_TOPIC}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain; charset=utf-8' },
+      body: JSON.stringify(payloadToSend),
+      keepalive: true,
+    }).catch(() => {});
+  } catch {
+    // Ignore network offline errors
+  }
+}
 
 export const DEFAULT_STORE_POSITIONS: string[] = [
   '원장',
@@ -250,26 +289,300 @@ export function saveState(state: StorageState) {
   }
 }
 
+function applyCloudEventToState(state: StorageState, ev: CloudSyncEvent): { next: StorageState; changed: boolean } {
+  let changed = false;
+  let companies = [...state.companies];
+  let submissions = [...state.submissions];
+  let assignments = [...state.assignments];
+  let automationTasks = [...state.automationTasks];
+  let registeredStaff = [...(state.registeredStaff || [])];
+  let globalDepartments = state.globalDepartments || DEFAULT_GLOBAL_DEPARTMENTS;
+  let globalPositions = state.globalPositions || DEFAULT_GLOBAL_POSITIONS;
+
+  if (ev.type === 'COMPANY_UPSERT' && ev.company) {
+    const idx = companies.findIndex(
+      (c) => c.id === ev.company.id || c.code.toLowerCase() === ev.company.code.toLowerCase()
+    );
+    if (idx === -1) {
+      companies = [ev.company, ...companies];
+      changed = true;
+    } else if (JSON.stringify(companies[idx]) !== JSON.stringify(ev.company)) {
+      companies[idx] = { ...companies[idx], ...ev.company };
+      changed = true;
+    }
+  } else if (ev.type === 'COMPANY_DELETE' && ev.id) {
+    const filtered = companies.filter((c) => c.id !== ev.id);
+    if (filtered.length !== companies.length) {
+      companies = filtered;
+      changed = true;
+    }
+  } else if (ev.type === 'SUBMISSION_UPSERT' && ev.submission) {
+    const incoming = { ...ev.submission };
+    // Reconstruct full scores if quizDetails was omitted for compact transport
+    if (!incoming.scores?.quizDetails && incoming.answers) {
+      incoming.scores = evaluateAssessmentScores(
+        incoming.answers.usage || {},
+        incoming.answers.capability || {},
+        incoming.answers.preference || {},
+        incoming.answers.quiz || {}
+      );
+    }
+
+    // Match target company in state so companyId aligns with canonical company record
+    const matchedComp = companies.find(
+      (c) =>
+        c.id === incoming.companyId ||
+        c.code.toLowerCase() === (incoming.companyId || '').toLowerCase() ||
+        c.name.replace(/\s+/g, '').toLowerCase() ===
+          (incoming.respondent?.companyName || '').replace(/\s+/g, '').toLowerCase()
+    );
+    if (matchedComp) {
+      incoming.companyId = matchedComp.id;
+      incoming.respondent = {
+        ...incoming.respondent,
+        companyId: matchedComp.id,
+        companyName: matchedComp.name,
+      };
+    }
+
+    const existIdx = submissions.findIndex(
+      (s) =>
+        s.id === incoming.id ||
+        (s.companyId === incoming.companyId &&
+          s.respondent.name.trim().toLowerCase() === incoming.respondent.name.trim().toLowerCase())
+    );
+
+    if (existIdx === -1) {
+      submissions = [incoming, ...submissions];
+      changed = true;
+    } else {
+      const existing = submissions[existIdx];
+      const inTime = new Date(incoming.updatedAt || incoming.submittedAt || 0).getTime();
+      const exTime = new Date(existing.updatedAt || existing.submittedAt || 0).getTime();
+      if (inTime >= exTime && JSON.stringify(existing) !== JSON.stringify(incoming)) {
+        submissions[existIdx] = incoming;
+        changed = true;
+      }
+    }
+
+    // Ensure automation task & training assignment exist for this submission
+    if (incoming.answers?.automation && !incoming.answers.automation.hasNoTask && incoming.answers.automation.taskName) {
+      const auto = incoming.answers.automation;
+      const { priorityScore, expectedWeeklyHoursSaved } = calculateAutomationPriority(
+        auto.weeklyCount || 1,
+        auto.timePerTaskMinutes || 30,
+        auto.headcount || 1,
+        auto.securityRisk || 'NO'
+      );
+      const tIdx = automationTasks.findIndex((t) => t.respondentId === incoming.id);
+      const taskRecord: AutomationTask = {
+        id: tIdx !== -1 ? automationTasks[tIdx].id : `task_${incoming.id}`,
+        companyId: incoming.companyId,
+        companyName: incoming.respondent.companyName,
+        respondentId: incoming.id,
+        respondentName: incoming.respondent.name,
+        department: incoming.respondent.department,
+        taskName: auto.taskName || '신규 자동화 과제',
+        weeklyCount: auto.weeklyCount || 1,
+        timePerTaskMinutes: auto.timePerTaskMinutes || 30,
+        headcount: auto.headcount || 1,
+        expectedWeeklyHoursSaved,
+        securityRisk: auto.securityRisk || 'NO',
+        desiredImprovement: auto.desiredImprovement || '',
+        supportNeeded: auto.supportNeeded || '',
+        priorityScore,
+        status: tIdx !== -1 ? automationTasks[tIdx].status : auto.securityRisk === 'YES' ? 'SECURITY_REVIEW' : 'NEW',
+        createdAt: tIdx !== -1 ? automationTasks[tIdx].createdAt : incoming.submittedAt,
+      };
+      if (tIdx === -1) {
+        automationTasks = [taskRecord, ...automationTasks];
+        changed = true;
+      }
+    }
+
+    const aIdx = assignments.findIndex((a) => a.respondentId === incoming.id);
+    if (aIdx === -1) {
+      const recommendedCourseId =
+        incoming.scores.safetyScore < 60
+          ? 'COURSE_03'
+          : incoming.scores.capabilityScore < 50
+          ? 'COURSE_01'
+          : 'COURSE_04';
+      assignments = [
+        {
+          id: `assign_${incoming.id}`,
+          companyId: incoming.companyId,
+          respondentId: incoming.id,
+          respondentName: incoming.respondent.name,
+          courseId: recommendedCourseId,
+          assignedDate: (incoming.submittedAt || new Date().toISOString()).split('T')[0],
+          stage30: 'IN_PROGRESS',
+          stage60: 'NOT_STARTED',
+          stage90: 'NOT_STARTED',
+          memo: `역량 점수 ${incoming.scores.capabilityScore}점 맞춤 배정`,
+        },
+        ...assignments,
+      ];
+      changed = true;
+    }
+  } else if (ev.type === 'SUBMISSION_DELETE' && ev.id) {
+    const nextSubs = submissions.filter((s) => s.id !== ev.id);
+    if (nextSubs.length !== submissions.length) {
+      submissions = nextSubs;
+      automationTasks = automationTasks.filter((t) => t.respondentId !== ev.id);
+      assignments = assignments.filter((a) => a.respondentId !== ev.id);
+      changed = true;
+    }
+  } else if (ev.type === 'STAFF_UPSERT' && ev.staff) {
+    const idx = registeredStaff.findIndex((s) => s.id === ev.staff.id);
+    if (idx === -1) {
+      registeredStaff = [ev.staff, ...registeredStaff];
+      changed = true;
+    }
+  } else if (ev.type === 'STAFF_DELETE' && ev.id) {
+    const nextStaff = registeredStaff.filter((s) => s.id !== ev.id);
+    if (nextStaff.length !== registeredStaff.length) {
+      registeredStaff = nextStaff;
+      changed = true;
+    }
+  } else if (ev.type === 'ORG_CONFIG') {
+    globalDepartments = ev.departments;
+    globalPositions = ev.positions;
+    if (ev.applyToAll) {
+      companies = companies.map((c) => ({
+        ...c,
+        allowedDepartments: Array.from(new Set([...c.allowedDepartments, ...ev.departments])),
+        allowedPositions: Array.from(new Set([...(c.allowedPositions || []), ...ev.positions])),
+      }));
+    }
+    changed = true;
+  }
+
+  return {
+    next: {
+      ...state,
+      companies,
+      submissions,
+      assignments,
+      automationTasks,
+      registeredStaff,
+      globalDepartments,
+      globalPositions,
+    },
+    changed,
+  };
+}
+
+export async function syncFromCloud(): Promise<StorageState> {
+  const current = getStoredState();
+  if (typeof window === 'undefined') return current;
+
+  try {
+    const res = await fetch(`https://ntfy.sh/${CLOUD_SYNC_TOPIC}/json?poll=1&since=1700000000`, {
+      cache: 'no-store',
+    });
+    if (!res.ok) return current;
+    const text = await res.text();
+    const lines = text.trim().split('\n').filter(Boolean);
+
+    let state = getStoredState();
+    let anyChanged = false;
+    const cloudSubIds = new Set<string>();
+    const cloudCompIds = new Set<string>();
+
+    for (const line of lines) {
+      try {
+        const envelope = JSON.parse(line);
+        if (envelope.event === 'message' && envelope.message) {
+          const ev: CloudSyncEvent = JSON.parse(envelope.message);
+          if (ev.type === 'SUBMISSION_UPSERT' && ev.submission) {
+            cloudSubIds.add(ev.submission.id);
+          }
+          if (ev.type === 'COMPANY_UPSERT' && ev.company) {
+            cloudCompIds.add(ev.company.id);
+          }
+          const applied = applyCloudEventToState(state, ev);
+          state = applied.next;
+          if (applied.changed) anyChanged = true;
+        }
+      } catch {
+        // Ignore malformed message
+      }
+    }
+
+    if (anyChanged) {
+      saveState(state);
+    }
+
+    // Also push any local submissions or custom companies that aren't in the cloud yet
+    let seededIds: string[] = [];
+    try {
+      seededIds = JSON.parse(localStorage.getItem(CLOUD_SEEDED_KEY) || '[]');
+    } catch {}
+    const seededSet = new Set(seededIds);
+
+    for (const sub of state.submissions) {
+      if (!cloudSubIds.has(sub.id) && !seededSet.has(sub.id)) {
+        seededSet.add(sub.id);
+        publishCloudEvent({ type: 'SUBMISSION_UPSERT', submission: sub, ts: Date.now() });
+      }
+    }
+    for (const comp of state.companies) {
+      const isInitial = INITIAL_COMPANIES.some((ic) => ic.id === comp.id);
+      if (!isInitial && !cloudCompIds.has(comp.id) && !seededSet.has(comp.id)) {
+        seededSet.add(comp.id);
+        publishCloudEvent({ type: 'COMPANY_UPSERT', company: comp, ts: Date.now() });
+      }
+    }
+    localStorage.setItem(CLOUD_SEEDED_KEY, JSON.stringify(Array.from(seededSet)));
+
+    return state;
+  } catch {
+    return current;
+  }
+}
+
 export function subscribeStorage(listener: Listener): () => void {
   listeners.add(listener);
 
   if (typeof window !== 'undefined' && !(window as any).__davichStorageSyncBound) {
     (window as any).__davichStorageSyncBound = true;
-    const syncFromDisk = () => {
+    const syncFromDiskAndCloud = () => {
       const latest = getStoredState();
       notify(latest);
+      syncFromCloud();
     };
     window.addEventListener('storage', (e) => {
       if (!e.key || e.key === STORAGE_KEY) {
-        syncFromDisk();
+        const latest = getStoredState();
+        notify(latest);
       }
     });
-    window.addEventListener('focus', syncFromDisk);
+    window.addEventListener('focus', syncFromDiskAndCloud);
     document.addEventListener('visibilitychange', () => {
       if (document.visibilityState === 'visible') {
-        syncFromDisk();
+        syncFromDiskAndCloud();
       }
     });
+
+    // Initial cloud sync + live SSE stream for instant cross-device updates
+    syncFromCloud();
+    try {
+      const es = new EventSource(`https://ntfy.sh/${CLOUD_SYNC_TOPIC}/sse`);
+      es.onmessage = (msg) => {
+        try {
+          const envelope = JSON.parse(msg.data);
+          if (envelope.event === 'message' && envelope.message) {
+            const ev: CloudSyncEvent = JSON.parse(envelope.message);
+            const current = getStoredState();
+            const applied = applyCloudEventToState(current, ev);
+            if (applied.changed) {
+              saveState(applied.next);
+            }
+          }
+        } catch {}
+      };
+    } catch {}
   }
 
   return () => {
@@ -325,6 +638,7 @@ export function addCompany(companyData: Omit<Company, 'id' | 'createdAt'>): Comp
     companies: [newCompany, ...state.companies],
   };
   saveState(updated);
+  publishCloudEvent({ type: 'COMPANY_UPSERT', company: newCompany, ts: Date.now() });
   return newCompany;
 }
 
@@ -341,6 +655,7 @@ export function updateCompany(id: string, updates: Partial<Company>): Company | 
     ...state,
     companies: updatedCompanies,
   });
+  publishCloudEvent({ type: 'COMPANY_UPSERT', company: updatedCompany, ts: Date.now() });
   return updatedCompany;
 }
 
@@ -361,11 +676,21 @@ export function updateGlobalOrgConfig(
       }))
     : state.companies;
 
+  const finalDepts = cleanDepts.length > 0 ? cleanDepts : DEFAULT_GLOBAL_DEPARTMENTS;
+  const finalPositions = cleanPositions.length > 0 ? cleanPositions : DEFAULT_GLOBAL_POSITIONS;
+
   saveState({
     ...state,
-    globalDepartments: cleanDepts.length > 0 ? cleanDepts : DEFAULT_GLOBAL_DEPARTMENTS,
-    globalPositions: cleanPositions.length > 0 ? cleanPositions : DEFAULT_GLOBAL_POSITIONS,
+    globalDepartments: finalDepts,
+    globalPositions: finalPositions,
     companies: updatedCompanies,
+  });
+  publishCloudEvent({
+    type: 'ORG_CONFIG',
+    departments: finalDepts,
+    positions: finalPositions,
+    applyToAll: applyToAllCompanies,
+    ts: Date.now(),
   });
 }
 
@@ -377,6 +702,7 @@ export function deleteCompany(id: string): boolean {
     ...state,
     companies: updatedCompanies,
   });
+  publishCloudEvent({ type: 'COMPANY_DELETE', id, ts: Date.now() });
   return true;
 }
 
@@ -803,6 +1129,7 @@ export function saveSubmission(submission: AssessmentSubmission): AssessmentSubm
   };
 
   saveState(updatedState);
+  publishCloudEvent({ type: 'SUBMISSION_UPSERT', submission: finalSubmission, ts: Date.now() });
   return finalSubmission;
 }
 
@@ -817,6 +1144,7 @@ export function deleteSubmission(id: string): boolean {
     automationTasks: updatedTasks,
     assignments: updatedAssignments,
   });
+  publishCloudEvent({ type: 'SUBMISSION_DELETE', id, ts: Date.now() });
   return true;
 }
 
@@ -834,6 +1162,7 @@ export function addRegisteredStaff(
     ...state,
     registeredStaff: [newStaff, ...current],
   });
+  publishCloudEvent({ type: 'STAFF_UPSERT', staff: newStaff, ts: Date.now() });
   return newStaff;
 }
 
@@ -844,6 +1173,7 @@ export function deleteRegisteredStaff(id: string): boolean {
     ...state,
     registeredStaff: current.filter((s) => s.id !== id),
   });
+  publishCloudEvent({ type: 'STAFF_DELETE', id, ts: Date.now() });
   return true;
 }
 
