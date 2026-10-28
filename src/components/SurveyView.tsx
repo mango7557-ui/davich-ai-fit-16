@@ -1225,7 +1225,7 @@ export const SurveyView: React.FC<SurveyViewProps> = ({
                 </h2>
               </div>
               <p className="text-xs text-slate-500 leading-relaxed">
-                프롬프트 작성, 환각 팩트체크, 개인정보 보호, 자동화 기법의 4지선다형 실전 문제입니다. 정답률은 결과 리포트의 <strong className="text-blue-700">[AI 실전 문제 풀이 점수]</strong>에 직접 반영됩니다.
+                프롬프트 작성, 환각 팩트체크, 개인정보 보호, 자동화 기법의 5지선다형 실전 문제입니다. 정답률은 결과 리포트의 <strong className="text-blue-700">[AI 실전 문제 풀이 점수]</strong>에 직접 반영됩니다.
               </p>
             </div>
             <div className="text-xs font-semibold text-blue-700 bg-blue-50 px-3.5 py-1.5 rounded-full border border-blue-200/80 self-start sm:self-auto tabular-nums flex items-center gap-1.5 shrink-0 shadow-2xs">
@@ -1258,7 +1258,7 @@ export const SurveyView: React.FC<SurveyViewProps> = ({
                       </span>
                     </div>
                     <span className="text-[10px] font-mono text-slate-400">
-                      ID: {q.id} (4지선다형)
+                      ID: {q.id} (5지선다형)
                     </span>
                   </div>
 
@@ -1278,8 +1278,8 @@ export const SurveyView: React.FC<SurveyViewProps> = ({
                     {q.question}
                   </p>
 
-                  {/* 4 Multiple Choice Options */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
+                  {/* 5 Multiple Choice Options */}
+                  <div className="grid grid-cols-1 gap-2.5 pt-1">
                     {q.options.map((opt) => {
                       const isSelected = currentChoice === opt.number;
 

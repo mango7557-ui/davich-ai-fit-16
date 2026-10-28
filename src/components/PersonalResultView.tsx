@@ -676,7 +676,7 @@ export const PersonalResultView: React.FC<PersonalResultViewProps> = ({
                   </div>
 
                   {/* Options with Indicators */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                  <div className="grid grid-cols-1 gap-2 text-xs">
                     {q.options.map((opt) => {
                       const isCorrectOpt = opt.number === q.correctAnswer;
                       const isUserOpt = userChoice === opt.number;
