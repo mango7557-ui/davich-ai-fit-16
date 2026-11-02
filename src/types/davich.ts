@@ -40,9 +40,9 @@ export const MASTER_ADMIN_ACCOUNTS = [
     role: 'MASTER' as const,
   },
   {
-    username: '다비치',
+    username: '기업',
     password: '1234',
-    name: '다비치 마스터 관리자',
+    name: '기업 마스터 관리자',
     role: 'MASTER' as const,
   },
 ];
@@ -106,7 +106,7 @@ export interface QuizQuestion {
   options: QuizQuestionOption[];
   correctAnswer: number; // 1 ~ 5
   explanation: string; // 정답 및 오답 상세 해설
-  davichTip?: string; // 다비치 현장 적용 팁
+  davichTip?: string; // 기업 현장 적용 팁
 }
 
 export interface AssessmentScores {

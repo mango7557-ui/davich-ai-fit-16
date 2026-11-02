@@ -448,15 +448,15 @@ export const SurveyView: React.FC<SurveyViewProps> = ({
             <div className="flex items-center gap-3.5">
               <img
                 src="assets/aistudio/___-_ceodavich_final_clean_da550648.png"
-                alt="다비치안경 로고"
+                alt="기업 로고"
                 className="w-12 h-12 rounded-2xl object-contain shadow-2xs shrink-0"
               />
               <div>
                 <span className="text-xs font-bold text-blue-700 uppercase tracking-wider">
-                  DAVICH AI FIT 16
+                  CORPORATE AI FIT 16
                 </span>
                 <h1 className="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight">
-                  다비치안경 AI 역량 & 업무 성향 진단
+                  기업 AI 역량 & 업무 성향 진단
                 </h1>
               </div>
             </div>
@@ -563,7 +563,7 @@ export const SurveyView: React.FC<SurveyViewProps> = ({
           <div className="w-11 h-11 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center shrink-0 p-1.5 shadow-2xs">
             <img
               src="assets/aistudio/___-_ceodavich_final_clean_da550648.png"
-              alt="다비치 로고"
+              alt="기업 로고"
               className="w-full h-full object-contain"
             />
           </div>
@@ -1073,7 +1073,7 @@ export const SurveyView: React.FC<SurveyViewProps> = ({
                   className="mt-0.5 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
                 />
                 <span className="text-slate-600 leading-relaxed">
-                  <strong className="text-slate-800">[필수]</strong> 본 진단에 제출하는 성명, 사번, 부서 정보가 다비치안경 사내 AI 역량 분석, 교육 과정 배정 및 자동화 과제 관리를 위해 수집·이용됨을 확인하고 동의합니다.
+                  <strong className="text-slate-800">[필수]</strong> 본 진단에 제출하는 성명, 사번, 부서 정보가 기업 사내 AI 역량 분석, 교육 과정 배정 및 자동화 과제 관리를 위해 수집·이용됨을 확인하고 동의합니다.
                 </span>
               </label>
 
@@ -1253,7 +1253,7 @@ export const SurveyView: React.FC<SurveyViewProps> = ({
                   </label>
                   <textarea
                     rows={2}
-                    placeholder="예: 매장 실무에 바로 쓸 수 있는 다비치 전용 프롬프트 예시집이 있으면 좋겠습니다 / 유료 계정 지원 희망 등"
+                    placeholder="예: 매장 실무에 바로 쓸 수 있는 기업 전용 프롬프트 예시집이 있으면 좋겠습니다 / 유료 계정 지원 희망 등"
                     value={(usageAnswers['U_CUSTOM_OPINION'] as string) || ''}
                     onChange={(e) =>
                       setUsageAnswers((prev) => ({

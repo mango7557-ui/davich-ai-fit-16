@@ -71,13 +71,13 @@ export const CompanyAdminLoginModal: React.FC<CompanyAdminLoginModalProps> = ({
           <div className="w-12 h-12 rounded-2xl bg-blue-50 border border-blue-100 flex items-center justify-center p-2 shrink-0 shadow-2xs">
             <img
               src="assets/aistudio/___-_ceodavich_final_clean_da550648.png"
-              alt="다비치안경 로고"
+              alt="기업 로고"
               className="w-full h-full object-contain"
             />
           </div>
           <div>
             <div className="text-[11px] font-bold text-blue-700 tracking-wider uppercase">
-              DAVICH AI FIT 16
+              CORPORATE AI FIT 16
             </div>
             <h3 className="text-lg font-extrabold text-slate-900 tracking-tight leading-tight">
               {company.name} 관리자 로그인

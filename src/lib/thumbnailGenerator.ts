@@ -15,7 +15,7 @@ export function generateCompanyThumbnailDataUrl(
   const ctx = canvas.getContext('2d');
   if (!ctx) return 'og-image.png';
 
-  const cleanName = (companyName || '다비치안경').trim();
+  const cleanName = (companyName || '기업').trim();
   const mainTitle = customTopic || `${cleanName} AI 역량 & 성향 진단`;
   const subTitle = customSubtitle || `${cleanName} 임직원 전용 16 성향 & 실무 역량 진단`;
 
@@ -65,11 +65,11 @@ export function generateCompanyThumbnailDataUrl(
   ctx.textAlign = 'center';
   ctx.fillStyle = '#60a5fa';
   ctx.font = 'bold 28px "Pretendard", "Malgun Gothic", sans-serif';
-  ctx.fillText(`DAVICH · ${cleanName}`, 600, 145);
+  ctx.fillText(`CORPORATE · ${cleanName}`, 600, 145);
 
-  // 3. Main Brand Header: DAVICH AI FIT 16
+  // 3. Main Brand Header: CORPORATE AI FIT 16
   ctx.font = '900 84px "Pretendard", "Malgun Gothic", sans-serif';
-  const brandPart1 = 'DAVICH ';
+  const brandPart1 = 'CORPORATE ';
   const brandPart2 = 'AI FIT 16';
   const w1 = ctx.measureText(brandPart1).width;
   const w2 = ctx.measureText(brandPart2).width;

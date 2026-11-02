@@ -268,7 +268,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const handleCopyInviteMessage = () => {
     if (!currentCompany) return;
     const surveyUrl = getCompanySurveyUrl(currentCompany.code);
-    const text = `[다비치안경 ${currentCompany.name} 직원 AI 역량 진단 참여 안내]\n\n안녕하십니까, ${currentCompany.name} 임직원 여러분.\n본사 및 지점의 AI 실무 활용 역량 강화와 업무 자동화 과제 발굴을 위해 사내 AI 진단 설문을 실시합니다.\n\n▶ 참여 링크: ${surveyUrl}\n▶ 소요 시간: 약 10~15분 (1주일 이내 완료)\n▶ 주요 진단: AI 실무 활용 역량 (0~100점), 16개 업무 성향 진단, 매장 업무 자동화 제안\n\n모든 임직원의 적극적인 참여를 부탁드립니다. 감사합니다.`;
+    const text = `[기업 ${currentCompany.name} 직원 AI 역량 진단 참여 안내]\n\n안녕하십니까, ${currentCompany.name} 임직원 여러분.\n본사 및 지점의 AI 실무 활용 역량 강화와 업무 자동화 과제 발굴을 위해 사내 AI 진단 설문을 실시합니다.\n\n▶ 참여 링크: ${surveyUrl}\n▶ 소요 시간: 약 10~15분 (1주일 이내 완료)\n▶ 주요 진단: AI 실무 활용 역량 (0~100점), 16개 업무 성향 진단, 매장 업무 자동화 제안\n\n모든 임직원의 적극적인 참여를 부탁드립니다. 감사합니다.`;
     navigator.clipboard.writeText(text);
     setCopiedInvite(true);
     notify('카카오톡 / 사내망 전달용 설문 참여 독려 안내문이 복사되었습니다.');
@@ -330,7 +330,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               <div className="w-14 h-14 rounded-2xl bg-blue-50 border border-blue-100 flex items-center justify-center p-2.5 shrink-0 shadow-2xs">
                 <img
                   src="assets/aistudio/___-_ceodavich_final_clean_da550648.png"
-                  alt="다비치 로고"
+                  alt="기업 로고"
                   className="w-full h-full object-contain"
                 />
               </div>
@@ -455,7 +455,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             <div className="flex items-center gap-2.5 text-xs font-semibold text-slate-700">
               <img
                 src="assets/aistudio/___-_ceodavich_final_clean_da550648.png"
-                alt="다비치 심볼"
+                alt="기업 심볼"
                 className="w-5 h-5 rounded object-contain shrink-0"
               />
               <span>분석 대상 기업:</span>
@@ -815,7 +815,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   onClick={() => {
                     loadSampleDataset();
                     refreshRegisteredStaff();
-                    notify('기본 샘플 참여자 데이터(다비치안경 본사 등)가 복원되었습니다.');
+                    notify('기본 샘플 참여자 데이터(기업 본사 등)가 복원되었습니다.');
                   }}
                   className="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-xl text-xs font-bold shadow-2xs cursor-pointer flex items-center gap-1.5"
                 >

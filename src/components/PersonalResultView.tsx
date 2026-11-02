@@ -106,7 +106,7 @@ export const PersonalResultView: React.FC<PersonalResultViewProps> = ({
           <div className="w-14 h-14 rounded-2xl bg-blue-50 border border-blue-100 flex items-center justify-center mx-auto p-2.5 shadow-2xs">
             <img
               src="assets/aistudio/___-_ceodavich_final_clean_da550648.png"
-              alt="다비치 로고"
+              alt="기업 로고"
               className="w-full h-full object-contain"
             />
           </div>
@@ -261,7 +261,7 @@ export const PersonalResultView: React.FC<PersonalResultViewProps> = ({
         <div className="flex items-center gap-3">
           <img
             src="assets/aistudio/___-_ceodavich_final_clean_da550648.png"
-            alt="다비치안경 로고"
+            alt="기업 로고"
             className="w-10 h-10 rounded-xl object-contain shadow-2xs shrink-0"
           />
           <div>
@@ -314,10 +314,10 @@ export const PersonalResultView: React.FC<PersonalResultViewProps> = ({
             <div className="flex items-center gap-2 text-xs text-blue-300 font-medium">
               <img
                 src="assets/aistudio/___-_ceodavich_final_clean_da550648.png"
-                alt="다비치 심볼"
+                alt="기업 심볼"
                 className="w-4 h-4 rounded object-contain shrink-0"
               />
-              <span>다비치 AI FIT 16 업무 활용 성향 분석</span>
+              <span>기업 AI FIT 16 업무 활용 성향 분석</span>
               <span aria-hidden="true">·</span>
               <span>교육용 프레임워크</span>
             </div>
@@ -820,7 +820,7 @@ export const PersonalResultView: React.FC<PersonalResultViewProps> = ({
                     {q.davichTip && (
                       <div className="pt-2 border-t border-blue-200/60 text-blue-900 leading-relaxed flex items-start gap-2">
                         <span className="px-2 py-0.5 rounded bg-blue-600 text-white text-[10px] font-bold shrink-0 mt-0.5">
-                          다비치 현장 TIP
+                          기업 현장 TIP
                         </span>
                         <span>{q.davichTip}</span>
                       </div>
@@ -904,7 +904,7 @@ export const PersonalResultView: React.FC<PersonalResultViewProps> = ({
           <span>결과 활용 안내</span>
         </div>
         <p className="leading-relaxed">
-          본 결과는 공식 MBTI 검사가 아닌 다비치안경 사내 AI 역량 육성을 위한 참고 진단입니다. 본 진단 결과는 직원의 채용, 인사 평가, 징계에 단독으로 사용되지 않으며, 안전하고 스마트한 업무 지원을 위해서만 활용됩니다.
+          본 결과는 공식 MBTI 검사가 아닌 기업 사내 AI 역량 육성을 위한 참고 진단입니다. 본 진단 결과는 직원의 채용, 인사 평가, 징계에 단독으로 사용되지 않으며, 안전하고 스마트한 업무 지원을 위해서만 활용됩니다.
         </p>
       </div>
     </div>

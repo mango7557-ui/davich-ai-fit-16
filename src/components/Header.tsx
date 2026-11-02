@@ -49,7 +49,7 @@ export const Header: React.FC<HeaderProps> = ({
   const handleLoadSample = () => {
     loadSampleDataset();
     setShowDataMenu(false);
-    notify('다비치안경 4개 기업 샘플 데이터가 성공적으로 탑재되었습니다.');
+    notify('기업 4개 기업 샘플 데이터가 성공적으로 탑재되었습니다.');
   };
 
   const handleReset = () => {
@@ -82,12 +82,12 @@ export const Header: React.FC<HeaderProps> = ({
             >
               <img
                 src="assets/aistudio/___-_ceodavich_final_clean_da550648.png"
-                alt="다비치안경 로고"
+                alt="기업 로고"
                 className="w-8 h-8 rounded-lg object-contain shadow-sm shrink-0 group-hover:scale-105 transition-transform"
               />
               <div className="flex flex-col">
                 <span className="text-base font-bold tracking-tight text-white whitespace-nowrap">
-                  DAVICH AI FIT 16
+                  CORPORATE AI FIT 16
                 </span>
                 <span className="text-[10px] text-slate-400 font-mono tracking-wider -mt-0.5">
                   {adminUser?.role === 'MASTER'
@@ -96,7 +96,7 @@ export const Header: React.FC<HeaderProps> = ({
                     ? `${adminUser.companyName} 전용 관리자 섹션 · 설문 참여자 관리`
                     : dedicatedCompanyName
                     ? `${dedicatedCompanyName} 전용 설문 참여 섹션`
-                    : '다비치안경 임직원 AI 역량 & 성향 진단'}
+                    : '기업 임직원 AI 역량 & 성향 진단'}
                 </span>
               </div>
             </button>

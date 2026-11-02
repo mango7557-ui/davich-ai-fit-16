@@ -27,6 +27,7 @@ import {
   updateGlobalOrgConfig,
   DEFAULT_STORE_POSITIONS,
   DEFAULT_HQ_POSITIONS,
+  DEFAULT_HQ_DEPARTMENTS,
   DEFAULT_GLOBAL_DEPARTMENTS,
   DEFAULT_GLOBAL_POSITIONS,
 } from '../lib/storage';
@@ -335,7 +336,7 @@ export const CompanyLinkManager: React.FC<CompanyLinkManagerProps> = ({
             <div className="flex items-center gap-2 text-xs font-semibold text-blue-700 tracking-wide uppercase">
               <img
                 src="assets/aistudio/___-_ceodavich_final_clean_da550648.png"
-                alt="다비치안경 심볼"
+                alt="기업 심볼"
                 className="w-5 h-5 rounded object-contain shrink-0"
               />
               <span>{isCompanyManager ? '소속 기업 전용 링크 관리' : '기업별 전용 링크 발급'}</span>
@@ -445,7 +446,7 @@ export const CompanyLinkManager: React.FC<CompanyLinkManagerProps> = ({
           <div className="w-14 h-14 rounded-2xl bg-blue-50 border border-blue-100 flex items-center justify-center mx-auto p-2.5 shadow-2xs">
             <img
               src="assets/aistudio/___-_ceodavich_final_clean_da550648.png"
-              alt="다비치안경 로고"
+              alt="기업 로고"
               className="w-full h-full object-contain"
             />
           </div>
@@ -494,7 +495,7 @@ export const CompanyLinkManager: React.FC<CompanyLinkManagerProps> = ({
                       <h3 className="text-lg font-bold text-slate-900 tracking-tight flex items-center gap-2">
                         <img
                           src="assets/aistudio/___-_ceodavich_final_clean_da550648.png"
-                          alt="다비치 심볼"
+                          alt="기업 심볼"
                           className="w-5 h-5 rounded object-contain shrink-0"
                         />
                         <span>{company.name}</span>
@@ -715,7 +716,7 @@ export const CompanyLinkManager: React.FC<CompanyLinkManagerProps> = ({
               <div className="flex items-center gap-3">
                 <img
                   src="assets/aistudio/___-_ceodavich_final_clean_da550648.png"
-                  alt="다비치안경 로고"
+                  alt="기업 로고"
                   className="w-9 h-9 rounded-xl object-contain shadow-2xs shrink-0"
                 />
                 <div>
@@ -741,7 +742,7 @@ export const CompanyLinkManager: React.FC<CompanyLinkManagerProps> = ({
                 <input
                   type="text"
                   required
-                  placeholder="예: 다비치안경 강남역삼점, 다비치 본사 마케팅본부"
+                  placeholder="예: 기업 강남역삼점, 기업 본사 마케팅본부"
                   value={name}
                   onChange={handleNameChange}
                   className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
@@ -759,7 +760,7 @@ export const CompanyLinkManager: React.FC<CompanyLinkManagerProps> = ({
                     className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
                   >
                     <option value="STORE">가맹/직영 안경원</option>
-                    <option value="HQ">다비치안경 본사</option>
+                    <option value="HQ">기업 본사</option>
                     <option value="AFFILIATE">관계사 / IT계열사</option>
                     <option value="OTHER">협력사 / 외부 기업</option>
                   </select>
@@ -922,7 +923,7 @@ export const CompanyLinkManager: React.FC<CompanyLinkManagerProps> = ({
             <div className="flex items-center justify-center gap-2">
               <img
                 src="assets/aistudio/___-_ceodavich_final_clean_da550648.png"
-                alt="다비치 로고"
+                alt="기업 로고"
                 className="w-6 h-6 rounded object-contain shrink-0"
               />
               <h3 className="text-base font-bold text-slate-900">
@@ -951,7 +952,7 @@ export const CompanyLinkManager: React.FC<CompanyLinkManagerProps> = ({
                   {qrModalCompany.name} AI 역량 & 16 성향 진단
                 </div>
                 <div className="text-[11px] text-slate-500 line-clamp-1">
-                  {qrModalCompany.name} 임직원 전용 AI 역량 & 성향 진단 (DAVICH AI FIT 16)
+                  {qrModalCompany.name} 임직원 전용 AI 역량 & 성향 진단 (CORPORATE AI FIT 16)
                 </div>
                 <div className="text-[10px] text-slate-400 font-mono pt-1">
                   {typeof window !== 'undefined' ? window.location.host : 'davich-aifit16.com'}
@@ -1018,7 +1019,7 @@ export const CompanyLinkManager: React.FC<CompanyLinkManagerProps> = ({
               <div className="flex items-center gap-3">
                 <img
                   src="assets/aistudio/___-_ceodavich_final_clean_da550648.png"
-                  alt="다비치안경 로고"
+                  alt="기업 로고"
                   className="w-9 h-9 rounded-xl object-contain shadow-2xs shrink-0"
                 />
                 <div>
@@ -1164,7 +1165,7 @@ export const CompanyLinkManager: React.FC<CompanyLinkManagerProps> = ({
               <div className="flex items-center gap-3">
                 <img
                   src="assets/aistudio/___-_ceodavich_final_clean_da550648.png"
-                  alt="다비치안경 로고"
+                  alt="기업 로고"
                   className="w-9 h-9 rounded-xl object-contain shadow-2xs shrink-0"
                 />
                 <div>
@@ -1260,8 +1261,18 @@ export const CompanyLinkManager: React.FC<CompanyLinkManagerProps> = ({
 
                 {/* Quick preset chips for departments */}
                 <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
-                  <span className="text-[11px] text-slate-500 mr-1">빠른 추가:</span>
-                  {['안경사 1팀 (시력검사)', '안경사 2팀 (콘택트/가공)', '전문검안팀', '콘택트렌즈팀', '조제가공실', '고객서비스(CS)팀', '매장영업팀', '경영지원팀', '마케팅전략팀', '가맹운영팀', '교육개발팀', 'IT혁신팀'].map((preset) => (
+                  <span className="text-[11px] text-slate-500 mr-1">본사/지점 빠른 추가:</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const merged = Array.from(new Set([...orgDepartments, ...DEFAULT_HQ_DEPARTMENTS]));
+                      setOrgDepartments(merged);
+                    }}
+                    className="text-[11px] px-2.5 py-0.5 rounded-md bg-blue-600 hover:bg-blue-500 text-white font-bold transition-colors cursor-pointer"
+                  >
+                    + 본사 32개 전체 부서 일괄 추가
+                  </button>
+                  {DEFAULT_HQ_DEPARTMENTS.map((preset) => (
                     <button
                       key={preset}
                       type="button"

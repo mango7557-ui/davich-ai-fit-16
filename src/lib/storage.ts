@@ -77,19 +77,49 @@ export const DEFAULT_HQ_POSITIONS: string[] = [
   '사원',
 ];
 
+export const DEFAULT_HQ_DEPARTMENTS: string[] = [
+  '상임대표',
+  '컴플라이언스실',
+  '정보보안팀',
+  '신사업팀',
+  '브랜드팀',
+  '안경가맹사업부문',
+  'CMPAS실',
+  '물류센터',
+  '마케팅본부',
+  '마케팅팀',
+  '이커머스팀',
+  'BM팀',
+  '디자인팀',
+  '안경테팀',
+  '안경렌즈팀',
+  '콘택트렌즈팀',
+  '연구개발확산팀',
+  'CS팀',
+  'AI팀',
+  '가맹관리본부',
+  'SV팀',
+  '상권개발팀',
+  'SI팀',
+  '보청기가맹사업부문',
+  '보청기팀',
+  '재무실',
+  '재무팀',
+  '자금팀',
+  '사업기획실',
+  '인재경영실',
+  '인사팀',
+  '전략기획실',
+];
+
 export const DEFAULT_GLOBAL_DEPARTMENTS: string[] = [
+  ...DEFAULT_HQ_DEPARTMENTS,
   '안경사 1팀 (시력검사)',
   '안경사 2팀 (콘택트/가공)',
   '전문검안팀',
-  '콘택트렌즈팀',
   '조제가공실',
   '고객서비스팀',
   '매장영업팀',
-  '경영지원팀',
-  '마케팅전략팀',
-  '가맹운영팀',
-  '교육개발팀',
-  'IT혁신팀',
 ];
 
 export const DEFAULT_GLOBAL_POSITIONS: string[] = [
@@ -130,7 +160,7 @@ export const INITIAL_COMPANIES: Company[] = [
     managerId: '한재환',
     managerPassword: '1234',
     contactEmail: 'hq@davich.com',
-    allowedDepartments: ['경영지원팀', '마케팅전략팀', '가맹운영팀', '교육개발팀', 'IT혁신팀'],
+    allowedDepartments: DEFAULT_HQ_DEPARTMENTS,
     allowedPositions: DEFAULT_HQ_POSITIONS,
     active: true,
     targetRespondentCount: 45,
@@ -139,7 +169,7 @@ export const INITIAL_COMPANIES: Company[] = [
   {
     id: 'comp_store_gangnam',
     code: 'store-gangnam',
-    name: '다비치안경 강남점',
+    name: '기업 강남점',
     category: 'STORE',
     managerName: '박서현 원장',
     managerId: 'gangnam_admin',
@@ -154,7 +184,7 @@ export const INITIAL_COMPANIES: Company[] = [
   {
     id: 'comp_store_daechi',
     code: 'store-daechi',
-    name: '다비치안경 대치본점',
+    name: '기업 대치본점',
     category: 'STORE',
     managerName: '김태윤 점장',
     managerId: 'daechi_admin',
@@ -169,10 +199,10 @@ export const INITIAL_COMPANIES: Company[] = [
   {
     id: 'comp_store_myeongdong',
     code: 'davich-sx7r',
-    name: '다비치안경 명동점',
+    name: '기업 명동점',
     category: 'STORE',
     managerName: '이진우 점장',
-    managerId: '다비치명동점',
+    managerId: '기업명동점',
     managerPassword: '1234',
     contactEmail: 'myeongdong@davichstore.com',
     allowedDepartments: ['안경사팀 (시력검사)', '콘택트렌즈팀', '고객만족팀', '조제가공실'],
@@ -218,22 +248,52 @@ export function getStoredState(): StorageState {
     const comps = (Array.isArray(parsed.companies) && parsed.companies.length > 0
       ? parsed.companies
       : INITIAL_COMPANIES
-    ).map((c: Company) => ({
-      ...c,
-      allowedDepartments:
-        Array.isArray(c.allowedDepartments) && c.allowedDepartments.length > 0
-          ? c.allowedDepartments
-          : ['안경사팀', '고객서비스팀', '조제가공실'],
-      allowedPositions:
-        Array.isArray(c.allowedPositions) && c.allowedPositions.length > 0
-          ? c.allowedPositions
-          : c.category === 'HQ'
-          ? DEFAULT_HQ_POSITIONS
-          : DEFAULT_STORE_POSITIONS,
-    }));
+    ).map((c: Company) => {
+      const isHq =
+        c.code === 'davich-hq' ||
+        c.id === 'comp_davich_hq' ||
+        c.category === 'HQ' ||
+        (c.name && c.name.includes('본사'));
+
+      if (isHq) {
+        // Ensure all 32 official HQ departments are present for HQ company
+        const existingCustomDepts = (c.allowedDepartments || []).filter(
+          (d) =>
+            !['경영지원팀', '마케팅전략팀', '가맹운영팀', '교육개발팀', 'IT혁신팀'].includes(d) &&
+            !DEFAULT_HQ_DEPARTMENTS.includes(d)
+        );
+        return {
+          ...c,
+          allowedDepartments: [...DEFAULT_HQ_DEPARTMENTS, ...existingCustomDepts],
+          allowedPositions:
+            Array.isArray(c.allowedPositions) && c.allowedPositions.length > 0
+              ? c.allowedPositions
+              : DEFAULT_HQ_POSITIONS,
+        };
+      }
+
+      return {
+        ...c,
+        allowedDepartments:
+          Array.isArray(c.allowedDepartments) && c.allowedDepartments.length > 0
+            ? c.allowedDepartments
+            : ['안경사팀', '고객서비스팀', '조제가공실'],
+        allowedPositions:
+          Array.isArray(c.allowedPositions) && c.allowedPositions.length > 0
+            ? c.allowedPositions
+            : DEFAULT_STORE_POSITIONS,
+      };
+    });
 
     const hqComp = comps.find((c: Company) => c.code === 'davich-hq' || c.id === 'comp_davich_hq');
-    const hqDepts = ['경영지원팀', '마케팅전략팀', '가맹운영팀', '교육개발팀', 'IT혁신팀'];
+    const hqDepts = [
+      ...DEFAULT_HQ_DEPARTMENTS,
+      '경영지원팀',
+      '마케팅전략팀',
+      '가맹운영팀',
+      '교육개발팀',
+      'IT혁신팀',
+    ];
 
     const normalizedSubmissions = (Array.isArray(parsed.submissions) ? parsed.submissions : []).map(
       (s: AssessmentSubmission) => {
@@ -300,14 +360,24 @@ function applyCloudEventToState(state: StorageState, ev: CloudSyncEvent): { next
   let globalPositions = state.globalPositions || DEFAULT_GLOBAL_POSITIONS;
 
   if (ev.type === 'COMPANY_UPSERT' && ev.company) {
+    const incomingComp = { ...ev.company };
+    if (
+      incomingComp.code === 'davich-hq' ||
+      incomingComp.id === 'comp_davich_hq' ||
+      incomingComp.category === 'HQ'
+    ) {
+      incomingComp.allowedDepartments = Array.from(
+        new Set([...DEFAULT_HQ_DEPARTMENTS, ...(incomingComp.allowedDepartments || [])])
+      );
+    }
     const idx = companies.findIndex(
-      (c) => c.id === ev.company.id || c.code.toLowerCase() === ev.company.code.toLowerCase()
+      (c) => c.id === incomingComp.id || c.code.toLowerCase() === incomingComp.code.toLowerCase()
     );
     if (idx === -1) {
-      companies = [ev.company, ...companies];
+      companies = [incomingComp, ...companies];
       changed = true;
-    } else if (JSON.stringify(companies[idx]) !== JSON.stringify(ev.company)) {
-      companies[idx] = { ...companies[idx], ...ev.company };
+    } else if (JSON.stringify(companies[idx]) !== JSON.stringify(incomingComp)) {
+      companies[idx] = { ...companies[idx], ...incomingComp };
       changed = true;
     }
   } else if (ev.type === 'COMPANY_DELETE' && ev.id) {
@@ -613,11 +683,18 @@ export function isSubmissionForCompany(
   if (targetCode === 'davich-hq' && (subCompId === 'comp_sample_hq' || subCompId === 'comp_davich_hq')) return true;
   if (targetCode === 'store-daechi' && (subCompId === 'comp_sample_gangnam' || subCompId === 'comp_store_daechi')) return true;
 
-  // Also if respondent's department is a unique HQ department (경영지원팀, 마케팅전략팀, 가맹운영팀, 교육개발팀, IT혁신팀) and company is HQ
+  // Also if respondent's department is a unique HQ department and company is HQ
   if (
     targetCode === 'davich-hq' &&
     sub.respondent?.department &&
-    ['경영지원팀', '마케팅전략팀', '가맹운영팀', '교육개발팀', 'IT혁신팀'].includes(sub.respondent.department.trim())
+    [
+      ...DEFAULT_HQ_DEPARTMENTS.filter((d) => d !== '콘택트렌즈팀'),
+      '경영지원팀',
+      '마케팅전략팀',
+      '가맹운영팀',
+      '교육개발팀',
+      'IT혁신팀',
+    ].includes(sub.respondent.department.trim())
   ) {
     return true;
   }
@@ -741,11 +818,11 @@ export function getOrCreateCompanyByCode(code: string, customName?: string): Com
   // Auto-generate company with exact link creation name
   let compName =
     urlName ||
-    '다비치안경 ' + (cleanCode === 'store-gangnam' || cleanCode.includes('gangnam') ? '강남점' : cleanCode.toUpperCase());
+    '기업 ' + (cleanCode === 'store-gangnam' || cleanCode.includes('gangnam') ? '강남점' : cleanCode.toUpperCase());
   if (!urlName) {
-    if (cleanCode.includes('daechi')) compName = '다비치안경 대치본점';
-    if (cleanCode.includes('myeongdong') || cleanCode === 'davich-sx7r') compName = '다비치안경 명동점';
-    if (cleanCode.includes('hq') || cleanCode.includes('main')) compName = '다비치안경 본사';
+    if (cleanCode.includes('daechi')) compName = '기업 대치본점';
+    if (cleanCode.includes('myeongdong') || cleanCode === 'davich-sx7r') compName = '기업 명동점';
+    if (cleanCode.includes('hq') || cleanCode.includes('main')) compName = '기업 본사';
   }
 
   const newComp: Company = {
@@ -757,7 +834,10 @@ export function getOrCreateCompanyByCode(code: string, customName?: string): Com
     managerId: urlAdminId || `admin_${cleanCode.replace(/[^a-z0-9]/g, '_')}`,
     managerPassword: '1234',
     contactEmail: `${cleanCode}@davichstore.com`,
-    allowedDepartments: ['안경사 1팀 (시력검사)', '안경사 2팀 (콘택트/가공)', '고객서비스팀', '매장영업팀'],
+    allowedDepartments:
+      cleanCode.includes('hq') || cleanCode.includes('main')
+        ? DEFAULT_HQ_DEPARTMENTS
+        : ['안경사 1팀 (시력검사)', '안경사 2팀 (콘택트/가공)', '고객서비스팀', '매장영업팀'],
     active: true,
     createdAt: new Date().toISOString(),
     targetRespondentCount: 15,
@@ -907,7 +987,7 @@ export function authenticateAdmin(
     return { success: false, message: '비밀번호를 입력해 주세요.' };
   }
 
-  // 1. Verify HQ Master Admin (본사 총괄 마스터 관리자: 한재환 / 1234, 다비치 / 1234)
+  // 1. Verify HQ Master Admin (본사 총괄 마스터 관리자: 한재환 / 1234, 기업 / 1234)
   const matchedMaster = MASTER_ADMIN_ACCOUNTS.find((acc) => {
     const mUser = acc.username.normalize('NFC').toLowerCase();
     const mPass = acc.password.normalize('NFC');
@@ -1345,7 +1425,7 @@ export function loadSampleDataset() {
     {
       id: 'comp_sample_hq',
       code: 'davich-hq',
-      name: '다비치안경 본사',
+      name: '기업 본사',
       category: 'HQ',
       managerName: '김태윤 실장 (경영지원실)',
       managerId: 'hq_admin',
@@ -1359,7 +1439,7 @@ export function loadSampleDataset() {
     {
       id: 'comp_sample_gangnam',
       code: 'store-daechi',
-      name: '다비치안경 대치본점 (직영점)',
+      name: '기업 대치본점 (직영점)',
       category: 'STORE',
       managerName: '박서현 원장',
       managerId: 'daechi_admin',
@@ -1373,7 +1453,7 @@ export function loadSampleDataset() {
     {
       id: 'comp_sample_busan',
       code: 'store-seomyeon',
-      name: '다비치안경 부산서면점 (가맹점)',
+      name: '기업 부산서면점 (가맹점)',
       category: 'STORE',
       managerName: '이지훈 점장',
       managerId: 'seomyeon_admin',
@@ -1387,7 +1467,7 @@ export function loadSampleDataset() {
     {
       id: 'comp_sample_tech',
       code: 'davich-tech',
-      name: '다비치테크 (전산·관계사)',
+      name: '기업테크 (전산·관계사)',
       category: 'AFFILIATE',
       managerName: '최성민 수석연구원',
       managerId: 'tech_admin',
@@ -1406,17 +1486,17 @@ export function loadSampleDataset() {
   const sampleAssignments: TrainingAssignment[] = [];
 
   const rawStaffList = [
-    { name: '이수연', compId: 'comp_davich_hq', compName: '다비치안경 본사', dept: '마케팅전략팀', pos: '과장', num: 'HQ-1024', pref: 'ECIP', cap: 78, safe: 85 },
-    { name: '정동진', compId: 'comp_davich_hq', compName: '다비치안경 본사', dept: '경영지원팀', pos: '대리', num: 'HQ-1055', pref: 'RAVP', cap: 64, safe: 90 },
-    { name: '윤지혜', compId: 'comp_davich_hq', compName: '다비치안경 본사', dept: 'IT혁신팀', pos: '팀장', num: 'HQ-1008', pref: 'EAVP', cap: 92, safe: 95 },
-    { name: '한소라', compId: 'comp_davich_hq', compName: '다비치안경 본사', dept: '교육개발팀', pos: '주임', num: 'HQ-1072', pref: 'RCVP', cap: 58, safe: 75 },
-    { name: '김민준', compId: 'comp_store_gangnam', compName: '다비치안경 강남점', dept: '안경사 1팀 (시력검사)', pos: '수석안경사', num: 'ST-2001', pref: 'RAVO', cap: 72, safe: 88 },
-    { name: '오세린', compId: 'comp_store_gangnam', compName: '다비치안경 강남점', dept: '안경사 2팀 (콘택트/가공)', pos: '안경사', num: 'ST-2014', pref: 'RCVO', cap: 52, safe: 70 },
-    { name: '배준우', compId: 'comp_store_gangnam', compName: '다비치안경 강남점', dept: '고객서비스팀', pos: '매니저', num: 'ST-2030', pref: 'ECVO', cap: 60, safe: 65 },
-    { name: '조유나', compId: 'comp_store_daechi', compName: '다비치안경 대치본점', dept: '전문검안팀', pos: '책임안경사', num: 'BS-3005', pref: 'RAVP', cap: 68, safe: 92 },
-    { name: '강태석', compId: 'comp_store_daechi', compName: '다비치안경 대치본점', dept: '콘택트렌즈팀', pos: '주임', num: 'BS-3011', pref: 'EAVO', cap: 56, safe: 60 },
-    { name: '신다혜', compId: 'comp_store_myeongdong', compName: '다비치안경 명동점', dept: '안경사팀 (시력검사)', pos: '수석안경사', num: 'TC-4009', pref: 'EAIP', cap: 88, safe: 85 },
-    { name: '임도현', compId: 'comp_store_myeongdong', compName: '다비치안경 명동점', dept: '조제가공실', pos: '안경사', num: 'TC-4022', pref: 'RAIP', cap: 75, safe: 80 },
+    { name: '이수연', compId: 'comp_davich_hq', compName: '기업 본사', dept: '마케팅전략팀', pos: '과장', num: 'HQ-1024', pref: 'ECIP', cap: 78, safe: 85 },
+    { name: '정동진', compId: 'comp_davich_hq', compName: '기업 본사', dept: '경영지원팀', pos: '대리', num: 'HQ-1055', pref: 'RAVP', cap: 64, safe: 90 },
+    { name: '윤지혜', compId: 'comp_davich_hq', compName: '기업 본사', dept: 'IT혁신팀', pos: '팀장', num: 'HQ-1008', pref: 'EAVP', cap: 92, safe: 95 },
+    { name: '한소라', compId: 'comp_davich_hq', compName: '기업 본사', dept: '교육개발팀', pos: '주임', num: 'HQ-1072', pref: 'RCVP', cap: 58, safe: 75 },
+    { name: '김민준', compId: 'comp_store_gangnam', compName: '기업 강남점', dept: '안경사 1팀 (시력검사)', pos: '수석안경사', num: 'ST-2001', pref: 'RAVO', cap: 72, safe: 88 },
+    { name: '오세린', compId: 'comp_store_gangnam', compName: '기업 강남점', dept: '안경사 2팀 (콘택트/가공)', pos: '안경사', num: 'ST-2014', pref: 'RCVO', cap: 52, safe: 70 },
+    { name: '배준우', compId: 'comp_store_gangnam', compName: '기업 강남점', dept: '고객서비스팀', pos: '매니저', num: 'ST-2030', pref: 'ECVO', cap: 60, safe: 65 },
+    { name: '조유나', compId: 'comp_store_daechi', compName: '기업 대치본점', dept: '전문검안팀', pos: '책임안경사', num: 'BS-3005', pref: 'RAVP', cap: 68, safe: 92 },
+    { name: '강태석', compId: 'comp_store_daechi', compName: '기업 대치본점', dept: '콘택트렌즈팀', pos: '주임', num: 'BS-3011', pref: 'EAVO', cap: 56, safe: 60 },
+    { name: '신다혜', compId: 'comp_store_myeongdong', compName: '기업 명동점', dept: '안경사팀 (시력검사)', pos: '수석안경사', num: 'TC-4009', pref: 'EAIP', cap: 88, safe: 85 },
+    { name: '임도현', compId: 'comp_store_myeongdong', compName: '기업 명동점', dept: '조제가공실', pos: '안경사', num: 'TC-4022', pref: 'RAIP', cap: 75, safe: 80 },
   ];
 
   rawStaffList.forEach((staff, index) => {

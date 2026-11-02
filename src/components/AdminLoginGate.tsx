@@ -69,13 +69,13 @@ export const AdminLoginGate: React.FC<AdminLoginGateProps> = ({
           <div className="w-14 h-14 rounded-2xl bg-blue-50 border border-blue-100 flex items-center justify-center mx-auto p-2.5 shadow-2xs">
             <img
               src="assets/aistudio/___-_ceodavich_final_clean_da550648.png"
-              alt="다비치안경 로고"
+              alt="기업 로고"
               className="w-full h-full object-contain"
             />
           </div>
           <div>
             <div className="text-xs font-bold text-blue-700 tracking-wider uppercase">
-              DAVICH AI FIT 16
+              CORPORATE AI FIT 16
             </div>
             <h2 className="text-xl font-extrabold text-slate-900 tracking-tight mt-0.5">
               {isCompanyLinkMode && targetCompany

@@ -205,7 +205,7 @@ export default function App() {
       setSelectedAdminCompanyId(user.companyId);
       setActiveTab('ADMIN');
     } else if (isDedicatedSurveyMode && dedicatedCompany) {
-      // If Master Admin logged in while on a specific company link (e.g. 다비치안경 본사 링크), open that company's participant management directly
+      // If Master Admin logged in while on a specific company link (e.g. 기업 본사 링크), open that company's participant management directly
       setSelectedAdminCompanyId(dedicatedCompany.id);
       setActiveTab('ADMIN');
     } else {
@@ -405,12 +405,12 @@ export default function App() {
           <div className="flex items-center gap-2.5">
             <img
               src="assets/aistudio/___-_ceodavich_final_clean_da550648.png"
-              alt="다비치안경 로고"
+              alt="기업 로고"
               className="w-5 h-5 rounded object-contain shrink-0"
             />
-            <span className="font-bold text-slate-800">DAVICH AI FIT 16</span>
+            <span className="font-bold text-slate-800">CORPORATE AI FIT 16</span>
             <span aria-hidden="true">·</span>
-            <span>다비치안경 사내 AI 역량 진단 및 업무 자동화 관리 시스템</span>
+            <span>기업 사내 AI 역량 진단 및 업무 자동화 관리 시스템</span>
           </div>
           <div className="flex items-center gap-3 text-slate-400">
             <span>본 시스템의 16유형 진단은 공식 MBTI 검사가 아닌 사내 AI 교육용 프레임워크입니다.</span>

@@ -38,9 +38,9 @@ export const KakaoShareModal: React.FC<KakaoShareModalProps> = ({
   onClose,
   surveyUrl,
 }) => {
-  const companyName = company?.name || '다비치안경';
+  const companyName = company?.name || '기업';
   const defaultTopic = `${companyName} AI 역량 & 16 성향 진단`;
-  const defaultSubtitle = `${companyName} 임직원 전용 AI 역량 & 성향 진단 (DAVICH AI FIT 16)`;
+  const defaultSubtitle = `${companyName} 임직원 전용 AI 역량 & 성향 진단 (CORPORATE AI FIT 16)`;
 
   const [topic, setTopic] = useState(defaultTopic);
   const [subtitle, setSubtitle] = useState(defaultSubtitle);
@@ -58,7 +58,7 @@ export const KakaoShareModal: React.FC<KakaoShareModalProps> = ({
   useEffect(() => {
     if (company) {
       const nextTopic = `${company.name} AI 역량 & 16 성향 진단`;
-      const nextSub = `${company.name} 임직원 전용 AI 역량 & 성향 진단 (DAVICH AI FIT 16)`;
+      const nextSub = `${company.name} 임직원 전용 AI 역량 & 성향 진단 (CORPORATE AI FIT 16)`;
       setTopic(nextTopic);
       setSubtitle(nextSub);
       setCustomThumbDataUrl(generateCompanyThumbnailDataUrl(company.name, nextTopic, nextSub));
@@ -264,7 +264,7 @@ ${surveyUrl}
               <div className="w-8 h-8 rounded-full bg-white border border-slate-300 flex items-center justify-center p-1 shrink-0 shadow-2xs">
                 <img
                   src="assets/aistudio/___-_ceodavich_final_clean_da550648.png"
-                  alt="다비치"
+                  alt="기업"
                   className="w-full h-full object-contain"
                 />
               </div>
@@ -272,7 +272,7 @@ ${surveyUrl}
               {/* Chat Message & Rich Link Card */}
               <div className="space-y-1.5 flex-1 min-w-0">
                 <span className="text-[11px] font-semibold text-slate-700 block">
-                  다비치안경 관리자
+                  기업 관리자
                 </span>
 
                 {/* White Card Bubble */}
