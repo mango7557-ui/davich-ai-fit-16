@@ -67,14 +67,13 @@ export const DEFAULT_STORE_POSITIONS: string[] = [
 ];
 
 export const DEFAULT_HQ_POSITIONS: string[] = [
-  '임원/본부장',
-  '팀장/부서장',
-  '수석/부장',
-  '책임/차장',
-  '선임/과장',
-  '대리',
-  '주임',
-  '사원',
+  '대표',
+  '디렉터',
+  '실장',
+  '수석팀장',
+  '팀장',
+  '파트장',
+  '매니저',
 ];
 
 export const DEFAULT_HQ_DEPARTMENTS: string[] = [
@@ -123,19 +122,13 @@ export const DEFAULT_GLOBAL_DEPARTMENTS: string[] = [
 ];
 
 export const DEFAULT_GLOBAL_POSITIONS: string[] = [
+  ...DEFAULT_HQ_POSITIONS,
   '원장',
   '점장',
   '부점장',
   '수석안경사',
   '책임안경사',
   '안경사',
-  '팀장',
-  '파트장',
-  '매니저',
-  '부장',
-  '차장',
-  '과장',
-  '대리',
   '주임',
   '사원',
 ];
@@ -256,19 +249,20 @@ export function getStoredState(): StorageState {
         (c.name && c.name.includes('본사'));
 
       if (isHq) {
-        // Ensure all 32 official HQ departments are present for HQ company
+        // Ensure all 32 official HQ departments & 7 official HQ positions are present for HQ company
         const existingCustomDepts = (c.allowedDepartments || []).filter(
           (d) =>
             !['경영지원팀', '마케팅전략팀', '가맹운영팀', '교육개발팀', 'IT혁신팀'].includes(d) &&
             !DEFAULT_HQ_DEPARTMENTS.includes(d)
         );
+        const legacyHqPos = ['임원/본부장', '팀장/부서장', '수석/부장', '책임/차장', '선임/과장', '부장', '차장', '과장', '대리', '주임', '사원'];
+        const existingCustomPos = (c.allowedPositions || []).filter(
+          (p) => !legacyHqPos.includes(p) && !DEFAULT_HQ_POSITIONS.includes(p) && !DEFAULT_STORE_POSITIONS.includes(p)
+        );
         return {
           ...c,
           allowedDepartments: [...DEFAULT_HQ_DEPARTMENTS, ...existingCustomDepts],
-          allowedPositions:
-            Array.isArray(c.allowedPositions) && c.allowedPositions.length > 0
-              ? c.allowedPositions
-              : DEFAULT_HQ_POSITIONS,
+          allowedPositions: [...DEFAULT_HQ_POSITIONS, ...existingCustomPos],
         };
       }
 
@@ -369,6 +363,7 @@ function applyCloudEventToState(state: StorageState, ev: CloudSyncEvent): { next
       incomingComp.allowedDepartments = Array.from(
         new Set([...DEFAULT_HQ_DEPARTMENTS, ...(incomingComp.allowedDepartments || [])])
       );
+      incomingComp.allowedPositions = DEFAULT_HQ_POSITIONS;
     }
     const idx = companies.findIndex(
       (c) => c.id === incomingComp.id || c.code.toLowerCase() === incomingComp.code.toLowerCase()

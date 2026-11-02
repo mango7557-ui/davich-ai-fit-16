@@ -1350,8 +1350,18 @@ export const CompanyLinkManager: React.FC<CompanyLinkManagerProps> = ({
 
                 {/* Quick preset chips for positions */}
                 <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
-                  <span className="text-[11px] text-slate-500 mr-1">빠른 추가:</span>
-                  {['원장', '점장', '부점장', '수석안경사', '책임안경사', '안경사', '팀장', '파트장', '매니저', '본부장', '부장', '차장', '과장', '대리', '주임', '사원'].map((preset) => (
+                  <span className="text-[11px] text-slate-500 mr-1">본사/지점 빠른 추가:</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const merged = Array.from(new Set([...orgPositions, ...DEFAULT_HQ_POSITIONS]));
+                      setOrgPositions(merged);
+                    }}
+                    className="text-[11px] px-2.5 py-0.5 rounded-md bg-indigo-600 hover:bg-indigo-500 text-white font-bold transition-colors cursor-pointer"
+                  >
+                    + 본사 7개 직책 일괄 추가
+                  </button>
+                  {['대표', '디렉터', '실장', '수석팀장', '팀장', '파트장', '매니저', '원장', '점장', '부점장', '수석안경사', '책임안경사', '안경사', '주임', '사원'].map((preset) => (
                     <button
                       key={preset}
                       type="button"
