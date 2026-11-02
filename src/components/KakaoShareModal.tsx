@@ -74,7 +74,7 @@ export const KakaoShareModal: React.FC<KakaoShareModalProps> = ({
   if (!isOpen || !company) return null;
 
   // Per-company static OG image URL for KakaoTalk scraper + fallback
-  const PREBUILT_CODES = ['davich-hq', 'store-gangnam', 'store-daechi', 'davich-sx7r'];
+  const PREBUILT_CODES = ['davich-48p6', 'davich-hq', 'store-gangnam', 'store-daechi', 'davich-sx7r'];
   const ogFileName = PREBUILT_CODES.includes(company.code)
     ? `og-${company.code}.png`
     : 'og-image.png';

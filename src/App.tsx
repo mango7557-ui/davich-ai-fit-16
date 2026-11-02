@@ -31,7 +31,7 @@ export default function App() {
       const pathParts = window.location.pathname.split('/').filter(Boolean);
       const hasCompanyInUrl =
         Boolean(params.get('company')) ||
-        pathParts.some((p) => ['davich-hq', 'store-gangnam', 'store-daechi', 'davich-sx7r'].includes(p.toLowerCase()));
+        pathParts.some((p) => ['davich-48p6', 'davich-hq', 'store-gangnam', 'store-daechi', 'davich-sx7r'].includes(p.toLowerCase()));
       if (!hasCompanyInUrl && saved?.role === 'COMPANY_MANAGER') {
         // Main root screen is strictly for Master Admin login
         return null;
@@ -45,7 +45,7 @@ export default function App() {
       const pathParts = window.location.pathname.split('/').filter(Boolean);
       const hasCompanyInUrl =
         Boolean(params.get('company')) ||
-        pathParts.some((p) => ['davich-hq', 'store-gangnam', 'store-daechi', 'davich-sx7r'].includes(p.toLowerCase()));
+        pathParts.some((p) => ['davich-48p6', 'davich-hq', 'store-gangnam', 'store-daechi', 'davich-sx7r'].includes(p.toLowerCase()));
       if (hasCompanyInUrl) {
         const saved = getSavedAdminSession();
         return saved?.role === 'COMPANY_MANAGER' ? 'ADMIN' : 'SURVEY';
@@ -59,7 +59,7 @@ export default function App() {
     const params = new URLSearchParams(window.location.search);
     const qComp = params.get('company');
     if (qComp) return qComp;
-    const PREBUILT_CODES = ['davich-hq', 'store-gangnam', 'store-daechi', 'davich-sx7r'];
+    const PREBUILT_CODES = ['davich-48p6', 'davich-hq', 'store-gangnam', 'store-daechi', 'davich-sx7r'];
     const pathParts = window.location.pathname.split('/').filter(Boolean);
     return pathParts.find((p) => PREBUILT_CODES.includes(p.toLowerCase())) || null;
   });
@@ -71,7 +71,7 @@ export default function App() {
     if (typeof window === 'undefined') return false;
     const params = new URLSearchParams(window.location.search);
     if (params.get('company')) return true;
-    const PREBUILT_CODES = ['davich-hq', 'store-gangnam', 'store-daechi', 'davich-sx7r'];
+    const PREBUILT_CODES = ['davich-48p6', 'davich-hq', 'store-gangnam', 'store-daechi', 'davich-sx7r'];
     const pathParts = window.location.pathname.split('/').filter(Boolean);
     return pathParts.some((p) => PREBUILT_CODES.includes(p.toLowerCase()));
   });
@@ -106,7 +106,7 @@ export default function App() {
     const params = new URLSearchParams(window.location.search);
     const qComp = params.get('company');
     if (qComp) return qComp;
-    const PREBUILT_CODES = ['davich-hq', 'store-gangnam', 'store-daechi', 'davich-sx7r'];
+    const PREBUILT_CODES = ['davich-48p6', 'davich-hq', 'store-gangnam', 'store-daechi', 'davich-sx7r'];
     const pathParts = window.location.pathname.split('/').filter(Boolean);
     const matchedCode = pathParts.find((p) => PREBUILT_CODES.includes(p.toLowerCase()));
     return matchedCode || null;

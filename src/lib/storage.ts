@@ -12,8 +12,9 @@ import { evaluateAssessmentScores, calculateAutomationPriority } from './assessm
 import { QUIZ_QUESTIONS } from '../data/questionBank';
 
 const STORAGE_KEY = 'davich_ai_fit16_store_v1';
-const CLOUD_SYNC_TOPIC = 'davich_aifit16_cloud_sync_v3_prod';
-const CLOUD_SEEDED_KEY = 'davich_cloud_seeded_ids_v3';
+const CLOUD_SYNC_TOPIC = 'davich_aifit16_cloud_sync_v4_isolated';
+const CLOUD_SEEDED_KEY = 'davich_cloud_seeded_ids_v4';
+const MIGRATION_ONLY_48P6_KEY = 'davich_only_48p6_reset_v1';
 
 export type CloudSyncEvent =
   | { type: 'SUBMISSION_UPSERT'; submission: AssessmentSubmission; ts: number }
@@ -307,44 +308,81 @@ export function getStoredState(): StorageState {
       });
     }
 
-    const comp48p6 = comps.find((c: Company) => c.code.toLowerCase() === 'davich-48p6');
-    const compHqOld = comps.find((c: Company) => c.code.toLowerCase() === 'davich-hq');
-
-    // Separate submissions strictly by link:
-    // Real HQ submissions that were previously forced onto comp_davich_hq belong to comp48p6 (davich-48p6),
-    // while sample submissions (sub_sample_*) stay on their own sample company IDs and never mix into davich-48p6
-    const normalizedSubmissions = (Array.isArray(parsed.submissions) ? parsed.submissions : []).map(
-      (s: AssessmentSubmission) => {
-        const isSample = s.id.startsWith('sub_sample_');
-        if (
-          !isSample &&
-          comp48p6 &&
-          (s.companyCode === 'davich-48p6' ||
-            s.companyId === comp48p6.id ||
-            (compHqOld && s.companyId === compHqOld.id && s.respondent?.companyName?.includes('본사')))
-        ) {
-          return {
-            ...s,
-            companyId: comp48p6.id,
-            companyCode: 'davich-48p6',
-            respondent: {
-              ...s.respondent,
-              companyId: comp48p6.id,
-              companyCode: 'davich-48p6',
-              companyName: comp48p6.name,
-            },
-          };
-        }
-        return s;
-      }
+    // Remove duplicate legacy 'davich-hq' company card if 'davich-48p6' is present so only one '다비치안경 본사' link exists
+    const filteredComps = comps.filter(
+      (c: Company) => c.code.toLowerCase() !== 'davich-hq' && c.id !== 'comp_davich_hq' && c.id !== 'comp_sample_hq'
     );
 
+    const comp48p6 = filteredComps.find((c: Company) => c.code.toLowerCase() === 'davich-48p6') || filteredComps[0];
+
+    let rawSubmissions: AssessmentSubmission[] = Array.isArray(parsed.submissions) ? parsed.submissions : [];
+    let rawAssignments: TrainingAssignment[] = Array.isArray(parsed.assignments) ? parsed.assignments : [];
+    let rawTasks: AutomationTask[] = Array.isArray(parsed.automationTasks) ? parsed.automationTasks : [];
+    let rawStaff: PreRegisteredStaff[] = Array.isArray(parsed.registeredStaff) ? parsed.registeredStaff : [];
+
+    // One-time migration: Keep ONLY '다비치안경 본사' (davich-48p6) participants, and reset all other company links to 0 participants
+    const alreadyMigrated = localStorage.getItem(MIGRATION_ONLY_48P6_KEY) === 'true';
+    if (!alreadyMigrated && comp48p6) {
+      // Keep submissions that belong to HQ (davich-48p6 / davich-hq / 본사) and bind them strictly to comp48p6;
+      // discard all submissions belonging to other store links so other links have 0 participants.
+      const hqSubmissions = rawSubmissions
+        .filter((s) => {
+          const cCode = (s.companyCode || s.respondent?.companyCode || '').toLowerCase();
+          const cId = (s.companyId || s.respondent?.companyId || '').toLowerCase();
+          const cName = s.respondent?.companyName || '';
+          if (cCode === 'davich-48p6' || cId === comp48p6.id.toLowerCase()) return true;
+          if (cCode === 'davich-hq' || cId === 'comp_davich_hq' || cId === 'comp_sample_hq') return true;
+          if (cName.includes('본사') && !cName.includes('대치본점')) return true;
+          return false;
+        })
+        .map((s) => ({
+          ...s,
+          companyId: comp48p6.id,
+          companyCode: 'davich-48p6',
+          respondent: {
+            ...s.respondent,
+            companyId: comp48p6.id,
+            companyCode: 'davich-48p6',
+            companyName: comp48p6.name,
+          },
+        }));
+
+      const keptSubIds = new Set(hqSubmissions.map((s) => s.id));
+      rawSubmissions = hqSubmissions;
+      rawAssignments = rawAssignments
+        .filter((a) => keptSubIds.has(a.respondentId))
+        .map((a) => ({ ...a, companyId: comp48p6.id }));
+      rawTasks = rawTasks
+        .filter((t) => keptSubIds.has(t.respondentId))
+        .map((t) => ({ ...t, companyId: comp48p6.id, companyName: comp48p6.name }));
+      rawStaff = rawStaff.filter((st) => st.companyId === comp48p6.id);
+
+      localStorage.setItem(MIGRATION_ONLY_48P6_KEY, 'true');
+      const cleanedState: StorageState = {
+        companies: filteredComps,
+        submissions: rawSubmissions,
+        assignments: rawAssignments,
+        automationTasks: rawTasks,
+        registeredStaff: rawStaff,
+        globalDepartments:
+          Array.isArray(parsed.globalDepartments) && parsed.globalDepartments.length > 0
+            ? parsed.globalDepartments
+            : DEFAULT_GLOBAL_DEPARTMENTS,
+        globalPositions:
+          Array.isArray(parsed.globalPositions) && parsed.globalPositions.length > 0
+            ? parsed.globalPositions
+            : DEFAULT_GLOBAL_POSITIONS,
+      };
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(cleanedState));
+      return cleanedState;
+    }
+
     return {
-      companies: comps,
-      submissions: normalizedSubmissions,
-      assignments: Array.isArray(parsed.assignments) ? parsed.assignments : [],
-      automationTasks: Array.isArray(parsed.automationTasks) ? parsed.automationTasks : [],
-      registeredStaff: Array.isArray(parsed.registeredStaff) ? parsed.registeredStaff : [],
+      companies: filteredComps,
+      submissions: rawSubmissions,
+      assignments: rawAssignments,
+      automationTasks: rawTasks,
+      registeredStaff: rawStaff,
       globalDepartments:
         Array.isArray(parsed.globalDepartments) && parsed.globalDepartments.length > 0
           ? parsed.globalDepartments

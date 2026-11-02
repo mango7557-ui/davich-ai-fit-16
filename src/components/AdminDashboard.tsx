@@ -247,7 +247,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     const nameParam = matched?.name ? `&name=${encodeURIComponent(matched.name)}` : '';
     if (typeof window === 'undefined') return `?company=${compCode}${nameParam}`;
 
-    const PREBUILT_CODES = ['davich-hq', 'store-gangnam', 'store-daechi', 'davich-sx7r'];
+    const PREBUILT_CODES = ['davich-48p6', 'davich-hq', 'store-gangnam', 'store-daechi', 'davich-sx7r'];
     let basePath = window.location.pathname;
     for (const c of PREBUILT_CODES) {
       if (basePath.endsWith(`/${c}/`)) {
