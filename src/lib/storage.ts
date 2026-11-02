@@ -315,10 +315,36 @@ export function getStoredState(): StorageState {
 
     const comp48p6 = filteredComps.find((c: Company) => c.code.toLowerCase() === 'davich-48p6') || filteredComps[0];
 
-    let rawSubmissions: AssessmentSubmission[] = Array.isArray(parsed.submissions) ? parsed.submissions : [];
-    let rawAssignments: TrainingAssignment[] = Array.isArray(parsed.assignments) ? parsed.assignments : [];
-    let rawTasks: AutomationTask[] = Array.isArray(parsed.automationTasks) ? parsed.automationTasks : [];
-    let rawStaff: PreRegisteredStaff[] = Array.isArray(parsed.registeredStaff) ? parsed.registeredStaff : [];
+    let rawSubmissions: AssessmentSubmission[] = (Array.isArray(parsed.submissions) ? parsed.submissions : []).filter(
+      (s: AssessmentSubmission) => s.respondent?.name?.trim() !== '반준우'
+    );
+    let rawAssignments: TrainingAssignment[] = (Array.isArray(parsed.assignments) ? parsed.assignments : []).filter(
+      (a: TrainingAssignment) => a.respondentName?.trim() !== '반준우'
+    );
+    let rawTasks: AutomationTask[] = (Array.isArray(parsed.automationTasks) ? parsed.automationTasks : []).filter(
+      (t: AutomationTask) => t.respondentName?.trim() !== '반준우'
+    );
+    let rawStaff: PreRegisteredStaff[] = (Array.isArray(parsed.registeredStaff) ? parsed.registeredStaff : []).filter(
+      (st: PreRegisteredStaff) => st.name?.trim() !== '반준우'
+    );
+
+    if (
+      Array.isArray(parsed.submissions) &&
+      parsed.submissions.length !== rawSubmissions.length
+    ) {
+      try {
+        localStorage.setItem(
+          STORAGE_KEY,
+          JSON.stringify({
+            ...parsed,
+            submissions: rawSubmissions,
+            assignments: rawAssignments,
+            automationTasks: rawTasks,
+            registeredStaff: rawStaff,
+          })
+        );
+      } catch {}
+    }
 
     // One-time migration: Keep ONLY '다비치안경 본사' (davich-48p6) participants, and reset all other company links to 0 participants
     const alreadyMigrated = localStorage.getItem(MIGRATION_ONLY_48P6_KEY) === 'true';
@@ -447,6 +473,9 @@ function applyCloudEventToState(state: StorageState, ev: CloudSyncEvent): { next
       changed = true;
     }
   } else if (ev.type === 'SUBMISSION_UPSERT' && ev.submission) {
+    if (ev.submission.respondent?.name?.trim() === '반준우') {
+      return { next: state, changed: false };
+    }
     const incoming = { ...ev.submission };
     // Reconstruct full scores if quizDetails was omitted for compact transport
     if (!incoming.scores?.quizDetails && incoming.answers) {
@@ -972,7 +1001,13 @@ export function getSavedRespondentSession(): RespondentSession | null {
   if (typeof window === 'undefined') return null;
   try {
     const raw = localStorage.getItem(RESPONDENT_SESSION_KEY);
-    return raw ? JSON.parse(raw) : null;
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (parsed?.name?.trim() === '반준우') {
+      localStorage.removeItem(RESPONDENT_SESSION_KEY);
+      return null;
+    }
+    return parsed;
   } catch {
     return null;
   }
