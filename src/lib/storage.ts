@@ -156,7 +156,7 @@ export const INITIAL_COMPANIES: Company[] = [
     allowedDepartments: DEFAULT_HQ_DEPARTMENTS,
     allowedPositions: DEFAULT_HQ_POSITIONS,
     active: true,
-    targetRespondentCount: 45,
+    targetRespondentCount: 1000,
     createdAt: '2026-10-10T09:00:00.000Z',
   },
   {
@@ -171,7 +171,7 @@ export const INITIAL_COMPANIES: Company[] = [
     allowedDepartments: ['안경사 1팀 (시력검사)', '안경사 2팀 (콘택트/가공)', '고객서비스팀', '매장영업팀'],
     allowedPositions: DEFAULT_STORE_POSITIONS,
     active: true,
-    targetRespondentCount: 15,
+    targetRespondentCount: 1000,
     createdAt: '2026-10-15T09:00:00.000Z',
   },
   {
@@ -186,7 +186,7 @@ export const INITIAL_COMPANIES: Company[] = [
     allowedDepartments: ['전문검안팀', '콘택트렌즈팀', '조제가공실'],
     allowedPositions: DEFAULT_STORE_POSITIONS,
     active: true,
-    targetRespondentCount: 12,
+    targetRespondentCount: 1000,
     createdAt: '2026-10-11T10:00:00.000Z',
   },
   {
@@ -201,7 +201,7 @@ export const INITIAL_COMPANIES: Company[] = [
     allowedDepartments: ['안경사팀 (시력검사)', '콘택트렌즈팀', '고객만족팀', '조제가공실'],
     allowedPositions: DEFAULT_STORE_POSITIONS,
     active: true,
-    targetRespondentCount: 18,
+    targetRespondentCount: 1000,
     createdAt: '2026-10-18T09:00:00.000Z',
   },
 ];
@@ -263,6 +263,10 @@ export function getStoredState(): StorageState {
           ...c,
           allowedDepartments: [...DEFAULT_HQ_DEPARTMENTS, ...existingCustomDepts],
           allowedPositions: [...DEFAULT_HQ_POSITIONS, ...existingCustomPos],
+          targetRespondentCount:
+            !c.targetRespondentCount || [12, 15, 18, 20, 45].includes(c.targetRespondentCount)
+              ? 1000
+              : c.targetRespondentCount,
         };
       }
 
@@ -276,6 +280,10 @@ export function getStoredState(): StorageState {
           Array.isArray(c.allowedPositions) && c.allowedPositions.length > 0
             ? c.allowedPositions
             : DEFAULT_STORE_POSITIONS,
+        targetRespondentCount:
+          !c.targetRespondentCount || [12, 15, 18, 20, 45].includes(c.targetRespondentCount)
+            ? 1000
+            : c.targetRespondentCount,
       };
     });
 
@@ -835,7 +843,7 @@ export function getOrCreateCompanyByCode(code: string, customName?: string): Com
         : ['안경사 1팀 (시력검사)', '안경사 2팀 (콘택트/가공)', '고객서비스팀', '매장영업팀'],
     active: true,
     createdAt: new Date().toISOString(),
-    targetRespondentCount: 15,
+    targetRespondentCount: 1000,
   };
 
   saveState({

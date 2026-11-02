@@ -65,7 +65,7 @@ export const CompanyLinkManager: React.FC<CompanyLinkManagerProps> = ({
   const [editManagerName, setEditManagerName] = useState('');
   const [editManagerId, setEditManagerId] = useState('');
   const [editManagerPassword, setEditManagerPassword] = useState('');
-  const [editTargetCount, setEditTargetCount] = useState<number>(20);
+  const [editTargetCount, setEditTargetCount] = useState<number>(1000);
   const [editDeptInput, setEditDeptInput] = useState('');
   const [editPosInput, setEditPosInput] = useState('');
 
@@ -173,7 +173,7 @@ export const CompanyLinkManager: React.FC<CompanyLinkManagerProps> = ({
     setEditManagerName(comp.managerName || '');
     setEditManagerId(comp.managerId || comp.code);
     setEditManagerPassword(comp.managerPassword || '1234');
-    setEditTargetCount(comp.targetRespondentCount || 20);
+    setEditTargetCount(comp.targetRespondentCount || 1000);
     setEditDeptInput(comp.allowedDepartments.join(', '));
     setEditPosInput((comp.allowedPositions || DEFAULT_STORE_POSITIONS).join(', '));
   };
@@ -196,7 +196,7 @@ export const CompanyLinkManager: React.FC<CompanyLinkManagerProps> = ({
       managerName: editManagerName.trim() || undefined,
       managerId: editManagerId.trim(),
       managerPassword: editManagerPassword.trim(),
-      targetRespondentCount: editTargetCount > 0 ? editTargetCount : 20,
+      targetRespondentCount: editTargetCount > 0 ? Math.min(1000, editTargetCount) : 1000,
       allowedDepartments: depts.length > 0 ? depts : ['기본 부서'],
       allowedPositions: positions.length > 0 ? positions : DEFAULT_STORE_POSITIONS,
     });
@@ -211,7 +211,7 @@ export const CompanyLinkManager: React.FC<CompanyLinkManagerProps> = ({
   const [managerId, setManagerId] = useState('');
   const [managerPassword, setManagerPassword] = useState('1234');
   const [contactEmail, setContactEmail] = useState('');
-  const [targetCount, setTargetCount] = useState<number>(20);
+  const [targetCount, setTargetCount] = useState<number>(1000);
   const [deptInput, setDeptInput] = useState('안경사 1팀 (시력검사), 안경사 2팀 (콘택트/가공), 고객서비스팀, 조제가공실');
   const [posInput, setPosInput] = useState(DEFAULT_STORE_POSITIONS.join(', '));
 
@@ -257,7 +257,7 @@ export const CompanyLinkManager: React.FC<CompanyLinkManagerProps> = ({
       contactEmail: contactEmail.trim() || undefined,
       allowedDepartments: depts.length > 0 ? depts : ['기본 부서'],
       allowedPositions: positions.length > 0 ? positions : DEFAULT_STORE_POSITIONS,
-      targetRespondentCount: targetCount > 0 ? targetCount : 20,
+      targetRespondentCount: targetCount > 0 ? Math.min(1000, targetCount) : 1000,
       active: true,
     });
 
@@ -474,7 +474,7 @@ export const CompanyLinkManager: React.FC<CompanyLinkManagerProps> = ({
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
           {filteredCompanies.map((company) => {
             const count = submissionCounts[company.id] || 0;
-            const target = company.targetRespondentCount || 20;
+            const target = company.targetRespondentCount || 1000;
             const rate = target > 0 ? Math.min(100, Math.round((count / target) * 100)) : 0;
             const surveyUrl = getFullSurveyUrl(company.code);
 

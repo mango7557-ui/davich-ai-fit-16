@@ -167,8 +167,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   // Targets and Participation Calculation
   const targetTotal =
     selectedCompanyId === 'ALL'
-      ? companies.reduce((acc, c) => acc + (c.targetRespondentCount || 20), 0)
-      : currentCompany?.targetRespondentCount || 20;
+      ? companies.reduce((acc, c) => acc + (c.targetRespondentCount || 1000), 0)
+      : currentCompany?.targetRespondentCount || 1000;
 
   const totalSubmitted = filteredSubmissions.length;
   const participationRate = targetTotal > 0 ? Math.min(100, Math.round((totalSubmitted / targetTotal) * 100)) : 0;
