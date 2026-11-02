@@ -48,10 +48,11 @@ export const MASTER_ADMIN_ACCOUNTS = [
 ];
 
 export interface RespondentProfile {
-  name: string; // Acts as User ID
-  password?: string; // Respondent password for resuming/editing
-  employeeNumber: string;
+  name: string;
+  password?: string; // 개인 설문 확인 및 재수정용 비밀번호
+  employeeNumber: string; // 사번 또는 고유 식별번호
   companyId: string;
+  companyCode?: string; // 전용 링크 고유 코드 (예: davich-48p6)
   companyName: string;
   department: string;
   position: string;
@@ -132,6 +133,7 @@ export interface AssessmentScores {
 export interface AssessmentSubmission {
   id: string;
   companyId: string;
+  companyCode?: string; // 전용 링크 고유 코드 (링크별 철저한 분리를 위해 저장)
   respondent: RespondentProfile;
   submittedAt: string;
   updatedAt?: string;

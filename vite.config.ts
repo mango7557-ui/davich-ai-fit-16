@@ -5,6 +5,7 @@ import path from 'path';
 import { defineConfig, Plugin } from 'vite';
 
 const PREBUILT_COMPANIES = [
+  { code: 'davich-48p6', name: '다비치안경 본사' },
   { code: 'davich-hq', name: '다비치안경 본사' },
   { code: 'store-gangnam', name: '다비치안경 강남점' },
   { code: 'store-daechi', name: '다비치안경 대치본점' },

@@ -399,6 +399,7 @@ export const SurveyView: React.FC<SurveyViewProps> = ({
       password: password.trim(),
       employeeNumber: employeeNumber.trim(),
       companyId: targetCompany.id,
+      companyCode: targetCompany.code,
       companyName: targetCompany.name,
       department: department.trim(),
       position: position.trim(),
@@ -408,6 +409,7 @@ export const SurveyView: React.FC<SurveyViewProps> = ({
     const submission: AssessmentSubmission = {
       id: loadedSubmissionId || `sub_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
       companyId: targetCompany.id,
+      companyCode: targetCompany.code,
       respondent,
       submittedAt: new Date().toISOString(),
       answers: {
