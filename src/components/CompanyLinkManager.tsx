@@ -212,7 +212,7 @@ export const CompanyLinkManager: React.FC<CompanyLinkManagerProps> = ({
   const [managerPassword, setManagerPassword] = useState('1234');
   const [contactEmail, setContactEmail] = useState('');
   const [targetCount, setTargetCount] = useState<number>(1000);
-  const [deptInput, setDeptInput] = useState('안경사 1팀 (시력검사), 안경사 2팀 (콘택트/가공), 고객서비스팀, 조제가공실');
+  const [deptInput, setDeptInput] = useState(DEFAULT_HQ_DEPARTMENTS.join(', '));
   const [posInput, setPosInput] = useState(DEFAULT_STORE_POSITIONS.join(', '));
 
   // Auto-generate code from name

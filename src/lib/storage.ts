@@ -114,12 +114,6 @@ export const DEFAULT_HQ_DEPARTMENTS: string[] = [
 
 export const DEFAULT_GLOBAL_DEPARTMENTS: string[] = [
   ...DEFAULT_HQ_DEPARTMENTS,
-  '안경사 1팀 (시력검사)',
-  '안경사 2팀 (콘택트/가공)',
-  '전문검안팀',
-  '조제가공실',
-  '고객서비스팀',
-  '매장영업팀',
 ];
 
 export const DEFAULT_GLOBAL_POSITIONS: string[] = [
@@ -169,7 +163,7 @@ export const INITIAL_COMPANIES: Company[] = [
     managerId: 'gangnam_admin',
     managerPassword: '1234',
     contactEmail: 'gangnam@davichstore.com',
-    allowedDepartments: ['안경사 1팀 (시력검사)', '안경사 2팀 (콘택트/가공)', '고객서비스팀', '매장영업팀'],
+    allowedDepartments: ['전문검안팀', '콘택트렌즈팀', '조제가공실'],
     allowedPositions: DEFAULT_STORE_POSITIONS,
     active: true,
     targetRespondentCount: 1000,
@@ -239,22 +233,38 @@ export function getStoredState(): StorageState {
       return DEFAULT_STATE;
     }
     const parsed = JSON.parse(raw);
+    const REMOVED_LEGACY_DEPTS = [
+      '경영지원팀',
+      '마케팅전략팀',
+      '가맹운영팀',
+      '교육개발팀',
+      'IT혁신팀',
+      '안경사 1팀 (시력검사)',
+      '안경사 2팀 (콘택트/가공)',
+      '안경사 1팀',
+      '안경사 2팀',
+      '안경사1팀',
+      '안경사2팀',
+      '고객서비스팀',
+      '매장영업팀',
+    ];
+
     const comps = (Array.isArray(parsed.companies) && parsed.companies.length > 0
       ? parsed.companies
       : INITIAL_COMPANIES
     ).map((c: Company) => {
       const isHq =
+        c.code === 'davich-48p6' ||
         c.code === 'davich-hq' ||
+        c.id === 'comp_davich_48p6' ||
         c.id === 'comp_davich_hq' ||
         c.category === 'HQ' ||
         (c.name && c.name.includes('본사'));
 
       if (isHq) {
-        // Ensure all 32 official HQ departments & 7 official HQ positions are present for HQ company
+        // Ensure ONLY the 32 official HQ departments & 7 official HQ positions are present for HQ company
         const existingCustomDepts = (c.allowedDepartments || []).filter(
-          (d) =>
-            !['경영지원팀', '마케팅전략팀', '가맹운영팀', '교육개발팀', 'IT혁신팀'].includes(d) &&
-            !DEFAULT_HQ_DEPARTMENTS.includes(d)
+          (d) => !REMOVED_LEGACY_DEPTS.includes(d.trim()) && !DEFAULT_HQ_DEPARTMENTS.includes(d.trim())
         );
         const legacyHqPos = ['임원/본부장', '팀장/부서장', '수석/부장', '책임/차장', '선임/과장', '부장', '차장', '과장', '대리', '주임', '사원'];
         const existingCustomPos = (c.allowedPositions || []).filter(
@@ -271,12 +281,23 @@ export function getStoredState(): StorageState {
         };
       }
 
+      const cleanedStoreDepts = (c.allowedDepartments || []).filter(
+        (d) =>
+          ![
+            '안경사 1팀 (시력검사)',
+            '안경사 2팀 (콘택트/가공)',
+            '안경사 1팀',
+            '안경사 2팀',
+            '안경사1팀',
+            '안경사2팀',
+            '고객서비스팀',
+            '매장영업팀',
+          ].includes(d.trim())
+      );
+
       return {
         ...c,
-        allowedDepartments:
-          Array.isArray(c.allowedDepartments) && c.allowedDepartments.length > 0
-            ? c.allowedDepartments
-            : ['안경사팀', '고객서비스팀', '조제가공실'],
+        allowedDepartments: cleanedStoreDepts.length > 0 ? cleanedStoreDepts : ['전문검안팀', '콘택트렌즈팀', '조제가공실'],
         allowedPositions:
           Array.isArray(c.allowedPositions) && c.allowedPositions.length > 0
             ? c.allowedPositions
@@ -447,13 +468,14 @@ function applyCloudEventToState(state: StorageState, ev: CloudSyncEvent): { next
   if (ev.type === 'COMPANY_UPSERT' && ev.company) {
     const incomingComp = { ...ev.company };
     if (
+      incomingComp.code === 'davich-48p6' ||
       incomingComp.code === 'davich-hq' ||
+      incomingComp.id === 'comp_davich_48p6' ||
       incomingComp.id === 'comp_davich_hq' ||
-      incomingComp.category === 'HQ'
+      incomingComp.category === 'HQ' ||
+      (incomingComp.name && incomingComp.name.includes('본사'))
     ) {
-      incomingComp.allowedDepartments = Array.from(
-        new Set([...DEFAULT_HQ_DEPARTMENTS, ...(incomingComp.allowedDepartments || [])])
-      );
+      incomingComp.allowedDepartments = DEFAULT_HQ_DEPARTMENTS;
       incomingComp.allowedPositions = DEFAULT_HQ_POSITIONS;
     }
     const idx = companies.findIndex(
@@ -909,9 +931,9 @@ export function getOrCreateCompanyByCode(code: string, customName?: string): Com
     managerPassword: '1234',
     contactEmail: `${cleanCode}@davichstore.com`,
     allowedDepartments:
-      cleanCode.includes('hq') || cleanCode.includes('main')
+      cleanCode.includes('hq') || cleanCode.includes('main') || cleanCode === 'davich-48p6' || compName.includes('본사')
         ? DEFAULT_HQ_DEPARTMENTS
-        : ['안경사 1팀 (시력검사)', '안경사 2팀 (콘택트/가공)', '고객서비스팀', '매장영업팀'],
+        : ['전문검안팀', '콘택트렌즈팀', '조제가공실'],
     active: true,
     createdAt: new Date().toISOString(),
     targetRespondentCount: 1000,
